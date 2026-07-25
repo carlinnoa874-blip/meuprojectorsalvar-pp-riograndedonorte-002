@@ -906,6 +906,30 @@
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', esperar);
   else esperar();
+
+  // Fallback robusto: captura QUALQUER clique em botão "Próximo" via composedPath
+  // (funciona mesmo se setupProximo() não anexou o handler no botão)
+  document.addEventListener('click', function(ev){
+    try {
+      var path = ev.composedPath ? ev.composedPath() : [];
+      var btn = null;
+      for(var i=0; i<path.length; i++){
+        var n = path[i];
+        if(n && n.tagName === 'BUTTON' && (n.textContent||'').trim().toLowerCase() === 'próximo'){
+          btn = n; break;
+        }
+      }
+      if(!btn) return;
+      // Se o handleProximoClick ainda não interceptou (via handler direto), interceptamos aqui
+      if(btn._proxFallbackHandled) return;
+      btn._proxFallbackHandled = true;
+      setTimeout(function(){ btn._proxFallbackHandled = false; }, 200);
+      var fd = document.querySelector('fd-formulario');
+      var sr = fd && fd.shadowRoot;
+      if(!sr) return;
+      handleProximoClick(ev, sr);
+    } catch(e){}
+  }, true);
 })();
 </script>
 </body>
