@@ -36,10 +36,10 @@ export default function AdminLogin() {
         <div className="dp-login-right">
           <form className="dp-login-card" onSubmit={onSubmit}>
             <div className="dp-brand">
-              <div className="dp-avatar">D</div>
+              <div className="dp-avatar">P</div>
               <div className="dp-brand-text">
-                <div className="t">Donas</div>
-                <div className="s">PAINEL ADMINISTRATIVO</div>
+                <div className="t">Polícia Penal RN</div>
+                <div className="s">INSCRIÇÃO POLÍCIA PENAL RN</div>
               </div>
             </div>
             <h1>Acessar painel</h1>

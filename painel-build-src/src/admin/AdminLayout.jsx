@@ -36,9 +36,9 @@ export default function AdminLayout() {
           </button>
 
           <div className="dp-sb-brand">
-            <div className="dp-avatar">D</div>
+            <div className="dp-avatar">P</div>
             <div className="dp-sb-text">
-              <div className="t">Donas</div>
+              <div className="t">Polícia Penal RN</div>
               <div className="s">Painel</div>
             </div>
           </div>
@@ -52,9 +52,9 @@ export default function AdminLayout() {
           </nav>
 
           <div className="dp-sb-user">
-            <div className="dp-avatar-sm">D</div>
+            <div className="dp-avatar-sm">P</div>
             <div className="dp-sb-text" style={{minWidth:0}}>
-              <div className="nm">donas (root)</div>
+              <div className="nm">Polícia Penal RN</div>
               <div className="rl">Administrador</div>
             </div>
           </div>

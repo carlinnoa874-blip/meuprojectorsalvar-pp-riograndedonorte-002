@@ -8,7 +8,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, refetchOnWindowFocus: false } },
 });
 
-document.title = "Painel Administrativo";
+document.title = "Inscrição Polícia Penal RN";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
