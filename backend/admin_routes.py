@@ -188,14 +188,24 @@ async def track_access(data: TrackIn, request: Request):
     ua = (data.user_agent or request.headers.get('user-agent', '')).lower()
     is_mobile = any(k in ua for k in ['mobi', 'android', 'iphone', 'ipad', 'ipod'])
 
-    # Conta apenas o PRIMEIRO acesso da visita: se o mesmo IP + dispositivo
-    # já acessou nos últimos 30 min, ignora (navegação entre páginas não conta).
+    # visitor_id (fingerprint único gerado no cliente, salvo em localStorage)
+    # Permite diferenciar múltiplos usuários que compartilham o mesmo IP público (comum em preview/CDN)
+    visitor_id = (data.extra or {}).get('visitor_id', '') if data.extra else ''
+
+    # Conta apenas o PRIMEIRO acesso da visita: se o mesmo visitor_id (fingerprint do cliente)
+    # OU o mesmo IP+dispositivo (fallback quando não há visitor_id) já acessou nos últimos 30 min, ignora.
     window_start = datetime.now(timezone.utc) - timedelta(minutes=30)
-    recent = await _db.accesses.find_one({
-        'ip': ip,
-        'device': 'mobile' if is_mobile else 'desktop',
-        'created_at': {'$gte': window_start},
-    })
+    if visitor_id:
+        recent = await _db.accesses.find_one({
+            'visitor_id': visitor_id,
+            'created_at': {'$gte': window_start},
+        })
+    else:
+        recent = await _db.accesses.find_one({
+            'ip': ip,
+            'device': 'mobile' if is_mobile else 'desktop',
+            'created_at': {'$gte': window_start},
+        })
     if recent:
         return {'ok': True, 'skipped': 'duplicate'}
 
@@ -206,6 +216,7 @@ async def track_access(data: TrackIn, request: Request):
         'page': page,
         'user_agent': data.user_agent or request.headers.get('user-agent', ''),
         'ip': ip,
+        'visitor_id': visitor_id,
         'city': geo.get('city', '') or data.extra.get('city', ''),
         'uf': geo.get('uf', '') or data.extra.get('uf', ''),
         'region_name': geo.get('region_name', ''),

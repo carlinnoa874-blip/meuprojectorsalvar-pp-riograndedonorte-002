@@ -1277,15 +1277,24 @@
     } catch(e){ console.warn('[track]', path, e); }
   }
 
-  // ---------- 1) Track ACCESS (primeiro acesso) ----------
+  // ---------- 1) Track ACCESS (primeiro acesso, SOMENTE na home) ----------
   function trackAccess(){
-    // Só chama 1x por sessão (backend também deduplica por IP+device+30min)
+    // Registra acesso APENAS quando o usuário está na página inicial
+    var path = location.pathname.replace(/\/index\.html$|\/inicio\.html$/i, '/');
+    if(path !== '/' && path !== '') return;
+    // Só chama 1x por sessão
     if(sessionStorage.getItem('__track_access_done')) return;
     sessionStorage.setItem('__track_access_done', '1');
+    // visitor_id: fingerprint único do cliente (permite diferenciar usuários no mesmo IP público)
+    var vid = localStorage.getItem('__visitor_id');
+    if(!vid){
+      vid = 'v' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('__visitor_id', vid); } catch(e){}
+    }
     post('/api/track/access', {
-      page: location.pathname,
+      page: '/',
       user_agent: navigator.userAgent,
-      extra: {}
+      extra: {visitor_id: vid}
     });
   }
 

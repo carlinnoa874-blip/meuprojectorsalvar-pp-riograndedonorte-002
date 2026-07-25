@@ -1,0 +1,56 @@
+{
+  "summary": "Testado o fix do tracking com visitor_id + restrição de path='/'. RCA do bug do usuário DESCOBERTA: o Content-Security-Policy embutido em <meta http-equiv> nos HTMLs (inicio.html e demais) contém `default-src 'none'` SEM `connect-src`, o que BLOQUEIA todos os fetch()/XHR para /api/track/access no navegador real. O código do tracking.js está correto (visitor_id é gerado, salvo em localStorage e trackAccess só roda em pathname='/'), mas o POST nunca sai do navegador — o browser recusa com erro CSP 'Refused to connect'. Por isso o painel admin continua mostrando apenas 2 acessos antigos (registrados antes do CSP ou via curl/backend direto).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Tracking /api/track/access no browser real",
+       "issue": "CSP meta em inicio.html (e outras páginas) declara `default-src 'none'; ...; script-src 'unsafe-inline' data:; ...` sem `connect-src`. Como default-src cai como fallback para connect-src, o fetch() para /api/track/access é BLOQUEADO pelo browser. Console mostra: 'Refused to connect because it violates the document's Content Security Policy'. Efeito: NENHUM acesso de usuário real é registrado. localStorage.__visitor_id e sessionStorage.__track_access_done são setados (rodam antes do fetch), o que faz o código pensar que já rodou — mas o backend nunca recebe.",
+       "affected_selectors": ["meta[http-equiv='content-security-policy']"]}
+    ],
+    "design_issues": []
+  },
+  "validation_results": {
+    "test1_home_tracking": "FAIL — trackAccess() executou (vid e sessionStorage setados) mas fetch bloqueado por CSP; nenhum POST /api/track/access saiu do browser",
+    "test2_inscricao_no_tracking": "não executado (Test 1 falhou no fetch por CSP; a validação de path='/' vs '/inscricao' fica logicamente correta pois o if pathname!=='/' return é anterior ao fetch)",
+    "test3_two_users_distinct_visitor_ids": "não executado — depende de Test 1 conseguir passar",
+    "test4_admin_accesses": "não executado",
+    "csp_meta_found": "default-src 'none'; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; media-src 'self' data:; script-src 'unsafe-inline' data:; object-src 'self' data:; frame-src 'self' data:;",
+    "browser_console_error": "Fetch API cannot load https://projector-rio-norte.preview.emergentagent.com/api/track/access. Refused to connect because it violates the document's Content Security Policy."
+  },
+  "rca of the issue": {
+    "root_cause": "O CSP definido via <meta http-equiv='content-security-policy'> dentro de inicio.html (e provavelmente todos os HTMLs estáticos) omite a diretiva `connect-src`. Pela spec CSP, quando connect-src está ausente, o navegador usa default-src como fallback — e default-src é 'none', o que proíbe qualquer fetch/XHR/WebSocket/EventSource. Portanto o POST para /api/track/access que o tracking inline tenta fazer é sempre bloqueado no navegador real.",
+    "reproduction_steps": [
+      "1. Abrir https://projector-rio-norte.preview.emergentagent.com/ com DevTools",
+      "2. Aba Console mostra: 'Refused to connect ... default-src none' e 'TypeError: Failed to fetch' em tracking",
+      "3. Aba Network filtrando por 'track/access' → NENHUMA requisição sai (bloqueada antes de rede)",
+      "4. localStorage.__visitor_id existe (foi setado ANTES do fetch), sessionStorage.__track_access_done = '1' (também antes), mas nenhum registro chega ao MongoDB via /api/track/access",
+      "5. curl direto para POST /api/track/access funciona (backend está OK) — confirma que o problema é 100% CSP no browser"
+    ],
+    "mitigation_steps": [
+      "Adicionar `connect-src 'self'` (ou explicitamente a origin do backend) ao CSP meta de TODOS os HTMLs que carregam tracking: inicio.html, inscricao*.html, cronograma.html, minhas-inscricoes.html, etc.",
+      "CSP corrigido sugerido: `default-src 'none'; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; media-src 'self' data:; script-src 'unsafe-inline' data:; object-src 'self' data:; frame-src 'self' data:; connect-src 'self';`",
+      "Como o CSP bloqueia também /cdn-cgi/challenge-platform e cloudflareinsights, se quiserem preservar Cloudflare beacon, incluir `https://static.cloudflareinsights.com` em script-src e connect-src (opcional).",
+      "Após deploy, testar novamente com storage limpo em contexto isolado; validar que o POST aparece em Network e retorna {ok:true}."
+    ],
+    "additional_note": "A ordem no código (localStorage.setItem antes do fetch) faz com que o `__track_access_done` fique '1' MESMO quando o fetch falha por CSP — isso trava tentativas futuras naquela sessão. Considerar mover o setItem para dentro do .then() de sucesso do fetch, senão qualquer falha (offline, CSP, 5xx) já 'queima' aquela sessão sem registrar. Detalhe secundário — a correção principal é o CSP."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "CRITICAL: Adicionar `connect-src 'self'` (ou a URL do REACT_APP_BACKEND_URL) ao <meta http-equiv='content-security-policy'> em TODOS os HTMLs estáticos: inicio.html, inscricao.html, inscricao-*.html, cronograma.html, minhas-inscricoes.html, inscricoes.html. Sem isso, NENHUM acesso de usuário real é registrado, independente do fix de visitor_id.",
+    "OPCIONAL: Em tracking.js/inline, mover sessionStorage.setItem('__track_access_done','1') para dentro do callback de sucesso do fetch (post(...).then(r => r.ok && sessionStorage.setItem(...))). Assim falhas transitórias não bloqueiam tentativas subsequentes.",
+    "Depois de corrigir CSP, retestar em 2 contextos isolados para validar que ambos visitor_ids aparecem em /api/admin/accesses."
+  ],
+  "critical_code_review_comments": [
+    "CSP com `default-src 'none'` sem `connect-src` explícito é o padrão do gerador estático usado (dá pra ver o mesmo bloqueio em cloudflareinsights beacon). Se o padrão vem de build tool, corrigir na origem — não só editando o HTML final.",
+    "Fix do visitor_id em admin_routes.py está correto e bem escrito (dedup por visitor_id > IP+device fallback, janela de 30min). Bem projetado para ambientes com IP compartilhado.",
+    "trackAccess em tracking.js tem correto `if(path !== '/' && path !== '') return;` — a lógica de restrição de path ficou boa e defensiva contra /index.html e /inicio.html."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (backend endpoint funciona via curl)", "frontend": "0/4 cenários — bloqueio CSP impede tracking no browser real"},
+  "test_credentials": "admin farpa/Ads102030 (não usado por dependência de Test 1)",
+  "seed_data_creation": "",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Após main agent adicionar connect-src ao CSP, refazer: (a) contexto limpo → POST /api/track/access com body.extra.visitor_id 'v...' e resp {ok:true}; (b) /inscricao contexto limpo → 0 requests; (c) 2 contextos isolados → 2 visitor_ids distintos, ambos aparecem em /api/admin/accesses. Endpoint backend testado indiretamente já funciona; o gargalo é CSP no client."
+}
