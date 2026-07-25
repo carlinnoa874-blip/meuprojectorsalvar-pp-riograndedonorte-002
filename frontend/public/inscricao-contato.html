@@ -739,27 +739,43 @@
     // Remove erro anterior (em todos os containers, para limpar de outros steps)
     Array.from(sr.querySelectorAll('.erro-campos-donas')).forEach(function(e){ e.remove(); });
 
-    var box = document.createElement('div');
-    box.className = 'erro-campos-donas';
-    box.style.cssText = 'display:inline-block;margin-top:10px;margin-left:auto;padding:8px 14px;background:#fef2f2;border:1px solid #fecaca;border-left:3px solid #dc2626;border-radius:6px;color:#991b1b;font-family:system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.4;float:right;clear:both';
-    var titulo = missing.length === 1 ? 'Preencha o campo obrigatório:' : 'Preencha os campos obrigatórios:';
-    box.innerHTML = '<div style="font-weight:600;display:flex;align-items:center;gap:5px;margin-bottom:'+(missing.length>1?'4px':'0')+'"><span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#dc2626;color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0">!</span>'+titulo+(missing.length===1?' <span style="font-weight:500;color:#991b1b">'+missing[0].replace(/[<>]/g,'')+'</span>':'')+'</div>'
-      + (missing.length>1 ? '<ul style="margin:0;padding-left:22px;font-weight:500">'
-        + missing.map(function(m){ return '<li style="margin:2px 0">'+m.replace(/[<>]/g,'')+'</li>'; }).join('')
-        + '</ul>' : '');
+    // Wrapper que garante alinhamento à direita, largura total, e posicionamento embaixo dos botões
+    var wrapper = document.createElement('div');
+    wrapper.className = 'erro-campos-donas';
+    wrapper.style.cssText = 'display:flex;justify-content:flex-end;width:100%;margin-top:12px;clear:both';
 
-    // Insere logo depois do container que contém o botão Próximo
-    var container = proximo.parentElement;
-    while(container && container.parentElement && !container.classList.contains('d-flex') && container.tagName !== 'DIV'){
-      container = container.parentElement;
+    var box = document.createElement('div');
+    box.style.cssText = 'display:inline-block;padding:10px 16px;background:#fef2f2;border:1px solid #fecaca;border-left:3px solid #dc2626;border-radius:6px;color:#991b1b;font-family:system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.4;max-width:400px;box-shadow:0 1px 3px rgba(0,0,0,0.06)';
+    var titulo = missing.length === 1 ? 'Preencha o campo obrigatório:' : 'Preencha os campos obrigatórios:';
+    box.innerHTML = '<div style="font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:'+(missing.length>1?'6px':'0')+'"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:#dc2626;color:#fff;border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0">!</span>'+titulo+(missing.length===1?' <span style="font-weight:500;color:#991b1b">'+missing[0].replace(/[<>]/g,'')+'</span>':'')+'</div>'
+      + (missing.length>1 ? '<ul style="margin:0;padding-left:22px;font-weight:500">'
+        + missing.map(function(m){ return '<li style="margin:3px 0">'+m.replace(/[<>]/g,'')+'</li>'; }).join('')
+        + '</ul>' : '');
+    wrapper.appendChild(box);
+
+    // Sobe até encontrar a linha que contém o botão Próximo (row com Anterior + Próximo)
+    var row = proximo.parentElement;
+    // Procura por um ancestral que seja d-flex, row, form-actions ou similar
+    var maxUp = 6, ptr = row;
+    while(ptr && maxUp-- > 0){
+      var cl = ptr.className || '';
+      if(/d-flex|row|form-actions|buttons|actions|footer/i.test(cl) && ptr.querySelector('button')){
+        row = ptr;
+        break;
+      }
+      ptr = ptr.parentElement;
     }
-    if(container && container.parentElement){
-      // Insere logo após esse container (abaixo dos botões)
-      if(container.nextSibling) container.parentElement.insertBefore(box, container.nextSibling);
-      else container.parentElement.appendChild(box);
+    // Insere o wrapper LOGO ABAIXO dessa linha
+    if(row && row.parentElement){
+      if(row.nextSibling) row.parentElement.insertBefore(wrapper, row.nextSibling);
+      else row.parentElement.appendChild(wrapper);
     } else {
-      proximo.parentElement.appendChild(box);
+      proximo.parentElement.appendChild(wrapper);
     }
+
+    // Referência usada pelo timer de auto-hide
+    var box_ref = wrapper;
+    box = wrapper;
 
     // Rola até o erro suavemente
     setTimeout(function(){ try { box.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){} }, 100);
