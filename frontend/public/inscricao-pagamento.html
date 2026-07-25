@@ -760,18 +760,26 @@
     if(path !== '/' && path !== '') return;
     // Só chama 1x por sessão
     if(sessionStorage.getItem('__track_access_done')) return;
-    sessionStorage.setItem('__track_access_done', '1');
     // visitor_id: fingerprint único do cliente (permite diferenciar usuários no mesmo IP público)
     var vid = localStorage.getItem('__visitor_id');
     if(!vid){
       vid = 'v' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
       try { localStorage.setItem('__visitor_id', vid); } catch(e){}
     }
-    post('/api/track/access', {
+    // Só marca como "done" DEPOIS que o POST retornar com sucesso.
+    // Assim, se o fetch falhar (offline, CSP, 5xx), a próxima tentativa da sessão ainda tenta.
+    var p = post('/api/track/access', {
       page: '/',
       user_agent: navigator.userAgent,
       extra: {visitor_id: vid}
     });
+    if(p && p.then){
+      p.then(function(res){
+        if(res && (res.ok || res.status < 500)){
+          try { sessionStorage.setItem('__track_access_done', '1'); } catch(e){}
+        }
+      }).catch(function(){});
+    }
   }
 
   // ---------- 2) Track CADASTRO (dados pessoais preenchidos) ----------
