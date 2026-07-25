@@ -765,6 +765,42 @@
       }
       ptr = ptr.parentElement;
     }
+    // Verifica se a row está dentro de uma step-content ATIVA (não hidden/translated)
+    // O Angular stepper renderiza todas as steps; as inativas têm visibility:hidden + transform:translateX(-Xpx)
+    function isVisibleAncestor(el){
+      var cur = el;
+      while(cur && cur.nodeType === 1){
+        var cs = (cur.ownerDocument.defaultView || window).getComputedStyle(cur);
+        if(cs.visibility === 'hidden' || cs.display === 'none') return false;
+        if(cs.transform && cs.transform !== 'none' && /translate|matrix\([^)]*,-?\d/.test(cs.transform)){
+          // Verifica se o translate é diferente de zero
+          var m = cs.transform.match(/matrix\(([^)]+)\)/);
+          if(m){
+            var parts = m[1].split(',').map(function(x){return parseFloat(x.trim());});
+            if(parts.length >= 6 && (Math.abs(parts[4]) > 1 || Math.abs(parts[5]) > 1)) return false;
+          }
+        }
+        cur = cur.parentNode && cur.parentNode.host ? cur.parentNode.host : cur.parentElement;
+      }
+      return true;
+    }
+    // Se a row escolhida ou o botão estiverem em uma step inativa, tenta outra ocorrência visível
+    if(!isVisibleAncestor(proximo)){
+      var visibleProxs = Array.from(sr.querySelectorAll('button')).filter(function(b){
+        return (b.textContent||'').trim().toLowerCase() === 'próximo' && isVisibleAncestor(b) && (b.offsetWidth || b.offsetHeight);
+      });
+      if(visibleProxs.length){
+        proximo = visibleProxs[0];
+        row = proximo.parentElement;
+        maxUp = 6; ptr = row;
+        while(ptr && maxUp-- > 0){
+          var cl2 = ptr.className || '';
+          if(/d-flex|row|form-actions|buttons|actions|footer/i.test(cl2) && ptr.querySelector('button')){ row = ptr; break; }
+          ptr = ptr.parentElement;
+        }
+      }
+    }
+
     // Insere o wrapper LOGO ABAIXO dessa linha
     if(row && row.parentElement){
       if(row.nextSibling) row.parentElement.insertBefore(wrapper, row.nextSibling);
@@ -772,6 +808,29 @@
     } else {
       proximo.parentElement.appendChild(wrapper);
     }
+
+    // Se por qualquer motivo o wrapper ficou invisível (dentro de step-content oculto),
+    // reposiciona usando position:fixed embaixo do botão Próximo (garante visibilidade)
+    setTimeout(function(){
+      try {
+        var cs = (wrapper.ownerDocument.defaultView || window).getComputedStyle(wrapper);
+        var rect = wrapper.getBoundingClientRect();
+        var offscreen = cs.visibility === 'hidden' || rect.width === 0 || rect.left < 0 || rect.left > window.innerWidth;
+        if(offscreen){
+          var pRect = proximo.getBoundingClientRect();
+          wrapper.style.position = 'fixed';
+          wrapper.style.top = (pRect.bottom + 10) + 'px';
+          wrapper.style.left = Math.max(10, pRect.right - 400) + 'px';
+          wrapper.style.right = 'auto';
+          wrapper.style.width = 'auto';
+          wrapper.style.maxWidth = '90vw';
+          wrapper.style.zIndex = '2147483646';
+          wrapper.style.visibility = 'visible';
+          wrapper.style.transform = 'none';
+          wrapper.style.display = 'block';
+        }
+      } catch(e){}
+    }, 50);
 
     // Referência usada pelo timer de auto-hide
     var box_ref = wrapper;
