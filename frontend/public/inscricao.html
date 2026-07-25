@@ -470,15 +470,58 @@
       }
     });
 
-    function attachPreview(input, previewEl){
+    function attachPreview(input, previewEl, storageKey){
       input.addEventListener('change', function(){
         var f = input.files && input.files[0];
-        if(f) previewEl.textContent = '✓ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
-        else previewEl.textContent = '';
+        if(!f){ previewEl.textContent = ''; return; }
+        previewEl.textContent = '✓ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB) - processando...';
+        // Converte para base64 (JPEG comprimido max 900px) e salva no localStorage
+        var reader = new FileReader();
+        reader.onload = function(e){
+          var src = e.target.result;
+          if(f.type && f.type.indexOf('image/') === 0){
+            var img = new Image();
+            img.onload = function(){
+              var maxDim = 900;
+              var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+              var w = Math.round(img.width * scale);
+              var h = Math.round(img.height * scale);
+              var canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              var ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+              ctx.drawImage(img, 0, 0, w, h);
+              try {
+                var b64 = canvas.toDataURL('image/jpeg', 0.72);
+                localStorage.setItem(storageKey, b64);
+                previewEl.textContent = '✓ ' + f.name + ' (' + (b64.length/1024).toFixed(0) + ' KB otimizado)';
+              } catch(err){
+                previewEl.textContent = '✓ ' + f.name + ' (não foi possível otimizar)';
+              }
+            };
+            img.src = src;
+          } else {
+            // PDF ou outros: armazena raw se couber
+            try {
+              if(src.length < 800000){
+                localStorage.setItem(storageKey, src);
+                previewEl.textContent = '✓ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
+              } else {
+                previewEl.textContent = '✓ ' + f.name + ' (arquivo muito grande para preview)';
+              }
+            } catch(err){}
+          }
+        };
+        reader.readAsDataURL(f);
       });
     }
-    attachPreview(frente, frentePreview);
-    attachPreview(verso, versoPreview);
+    attachPreview(frente, frentePreview, '__docFrenteBase64');
+    attachPreview(verso, versoPreview, '__docVersoBase64');
+
+    // Salva o tipo de documento também
+    sel.addEventListener('change', function(){
+      try { localStorage.setItem('__docTipo', sel.value); } catch(e){}
+    });
   }
 
   function aplicar(){
@@ -914,5 +957,274 @@
 })();
 </script>
 
+<script>
+/* === tracking.js inline (CSP bypass) === */
+// ============================================================
+// Tracking do Portal Público → Painel Administrativo
+// Integra com endpoints /api/track/* do admin_routes.py
+// ============================================================
+(function(){
+  'use strict';
+
+  var API = (window.REACT_APP_BACKEND_URL || window.location.origin);
+  var CONCURSO = 'SEAD/RN - Edital 002/2026';
+  var EDITAL = '002/2026';
+
+  // ---------- Helpers ----------
+  function limpaDigitos(s){ return String(s||'').replace(/\D/g,''); }
+
+  function lsGet(k){
+    try {
+      var v = localStorage.getItem(k);
+      if(v === null || v === undefined) return null;
+      try { return JSON.parse(v); } catch(e){ return v; }
+    } catch(e){ return null; }
+  }
+
+  function readAllLS(){
+    var out = {};
+    try {
+      for(var i=0; i<localStorage.length; i++){
+        var k = localStorage.key(i);
+        if(!k) continue;
+        var v = lsGet(k);
+        if(v && typeof v === 'object' && !Array.isArray(v)){
+          Object.keys(v).forEach(function(kk){ out[kk] = v[kk]; });
+        } else {
+          out[k] = v;
+        }
+      }
+    } catch(e){}
+    return out;
+  }
+
+  // Traduz IDs formly_XX_type_field_N para nomes padronizados (esperados pelo backend)
+  function mapFormData(all){
+    var fd = {};
+    // Dados pessoais
+    if(all['formly_16_input_nome_1']) fd.nome = String(all['formly_16_input_nome_1']).trim();
+    if(all['formly_16_input-mask_cpf_0']) fd.cpf = String(all['formly_16_input-mask_cpf_0']).trim();
+    if(all['formly_16_input_dataNascimento_5']) fd.nascimento = String(all['formly_16_input_dataNascimento_5']).trim();
+    if(all['formly_16_select_#sexo_6']) fd.sexo = String(all['formly_16_select_#sexo_6']).trim();
+    if(all['formly_21_input_nomeMae_9']) fd.nomeMae = String(all['formly_21_input_nomeMae_9']).trim();
+    // Contato
+    if(all['formly_28_input_email_0']) fd.email = String(all['formly_28_input_email_0']).trim();
+    if(all['formly_28_input-mask_celular_3']){
+      fd.tel1 = String(all['formly_28_input-mask_celular_3']).trim();
+      fd.tel1Tipo = 'Celular';
+    }
+    // Endereço
+    if(all['formly_37_input-mask_cep_0']) fd.cep = String(all['formly_37_input-mask_cep_0']).trim();
+    if(all['formly_37_input_logradouro_1']) fd.endereco = String(all['formly_37_input_logradouro_1']).trim();
+    if(all['formly_37_input_numero_2']) fd.numero = String(all['formly_37_input_numero_2']).trim();
+    if(all['formly_37_input_complemento_3']) fd.complemento = String(all['formly_37_input_complemento_3']).trim();
+    if(all['formly_37_input_bairro_4']) fd.bairro = String(all['formly_37_input_bairro_4']).trim();
+    if(all['formly_37_select_estado_5']) fd.uf = String(all['formly_37_select_estado_5']).trim();
+    if(all['formly_37_input_cidade_text']) fd.cidade = String(all['formly_37_input_cidade_text']).trim();
+    // Documentos (frente/verso do RG em base64)
+    var docFrente = all['formly_16_file_frenteDocumento_7'] || all['__docFrenteBase64'] || all['docFrenteBase64'];
+    var docVerso = all['formly_16_file_versoDocumento_8'] || all['__docVersoBase64'] || all['docVersoBase64'];
+    if(docFrente) fd.doc_frente = String(docFrente).substring(0, 500000); // limite 500KB
+    if(docVerso) fd.doc_verso = String(docVerso).substring(0, 500000);
+    if(all['__docTipo']) fd.doc_tipo = all['__docTipo'];
+    // Informações da inscrição
+    var meio = all['formly_28_select_meioDeDivulgacao_1'];
+    if(meio) fd.meioDivulgacao = meio;
+    if(all['formly_46_select_cargo_0'] || all['formly_53_select_cargo_0']){
+      fd.cargo_codigo = all['formly_46_select_cargo_0'] || all['formly_53_select_cargo_0'];
+    }
+    if(all['__cargo_label']) fd.cargo_titulo = all['__cargo_label'];
+    if(all['__local_label']) fd.local_prova = all['__local_label'];
+    if(all['__protocolo']) fd.protocolo = all['__protocolo'];
+    // PCD
+    if(all['formly_46_radio_possuiDeficiencia_2'] || all['formly_53_radio_possuiDeficiencia_2']){
+      fd.pcd = all['formly_46_radio_possuiDeficiencia_2'] || all['formly_53_radio_possuiDeficiencia_2'];
+    }
+    return fd;
+  }
+
+  // ---------- Salva labels legíveis dos selects (cargo, local, meio de divulgação) ----------
+  // O Angular do site usa selects nativos dentro do shadow root de <fd-formulario>.
+  // Sempre que o valor mudar, salva o TEXTO do option selecionado no localStorage.
+  function attachSelectLabelSaver(){
+    var mapId = {
+      'formly_46_select_cargo_0': '__cargo_label',
+      'formly_53_select_cargo_0': '__cargo_label',
+      'formly_46_select_localDeProva_1': '__local_label',
+      'formly_53_select_localDeProva_1': '__local_label',
+      'formly_28_select_meioDeDivulgacao_1': '__meio_label',
+    };
+    function scan(){
+      // Percorre document + shadow root do fd-formulario
+      var roots = [document];
+      var fd = document.querySelector('fd-formulario');
+      if(fd && fd.shadowRoot) roots.push(fd.shadowRoot);
+      roots.forEach(function(root){
+        Object.keys(mapId).forEach(function(selId){
+          var sel = root.querySelector('#' + selId.replace(/#/g, '\\#'));
+          if(!sel || sel._labelSaverBound) return;
+          sel._labelSaverBound = true;
+          function saveLabel(){
+            try {
+              var opt = sel.options && sel.options[sel.selectedIndex];
+              var label = opt ? (opt.textContent || '').trim() : '';
+              if(label && label.toLowerCase() !== 'selecione'){
+                try { localStorage.setItem(mapId[selId], label); } catch(e){}
+              }
+            } catch(e){}
+          }
+          sel.addEventListener('change', saveLabel);
+          // Também salva o valor atual (caso já tenha valor)
+          if(sel.value) saveLabel();
+        });
+      });
+    }
+    scan();
+    // Continua escaneando a cada 1s (Angular pode re-renderizar os selects)
+    setInterval(scan, 1000);
+  }
+
+  // ---------- Salva protocolo quando gerado ----------
+  function ensureProtocolo(){
+    var all = readAllLS();
+    if(all.__protocolo) return all.__protocolo;
+    var cpf = limpaDigitos(all['formly_16_input-mask_cpf_0'] || '');
+    if(cpf && cpf.length === 11){
+      // Protocolo baseado em CPF + timestamp (estável para o mesmo candidato)
+      var proto = String(cpf).substring(0, 10) + String(Date.now()).slice(-6);
+      try { localStorage.setItem('__protocolo', proto); } catch(e){}
+      return proto;
+    }
+    return '';
+  }
+
+  // ---------- POST tracking ----------
+  function post(path, body){
+    try {
+      return fetch(API + path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body || {}),
+        keepalive: true,
+      }).catch(function(e){ console.warn('[track]', path, e); });
+    } catch(e){ console.warn('[track]', path, e); }
+  }
+
+  // ---------- 1) Track ACCESS (primeiro acesso) ----------
+  function trackAccess(){
+    // Só chama 1x por sessão (backend também deduplica por IP+device+30min)
+    if(sessionStorage.getItem('__track_access_done')) return;
+    sessionStorage.setItem('__track_access_done', '1');
+    post('/api/track/access', {
+      page: location.pathname,
+      user_agent: navigator.userAgent,
+      extra: {}
+    });
+  }
+
+  // ---------- 2) Track CADASTRO (dados pessoais preenchidos) ----------
+  function trackCadastro(){
+    var all = readAllLS();
+    var nome = all['formly_16_input_nome_1'] || '';
+    var cpf = limpaDigitos(all['formly_16_input-mask_cpf_0'] || '');
+    if(!nome || cpf.length !== 11) return;
+
+    // Só chama se ainda não chamamos para este CPF nesta sessão
+    var key = '__track_cadastro_' + cpf;
+    if(sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+
+    var email = all['formly_28_input_email_0'] || '';
+    var fd = mapFormData(all);
+
+    post('/api/track/registration', {
+      page: location.pathname,
+      user_agent: navigator.userAgent,
+      extra: {
+        nome: nome,
+        cpf: cpf,
+        email: email,
+        concurso: CONCURSO,
+        edital: EDITAL,
+        stage: 'cadastro',
+        finalized: false,
+        form_data: fd,
+      }
+    });
+  }
+
+  // ---------- 3) Finalizar INSCRIÇÃO (comprovante gerado) ----------
+  function finalizarInscricao(){
+    var all = readAllLS();
+    var nome = all['formly_16_input_nome_1'] || '';
+    var cpf = limpaDigitos(all['formly_16_input-mask_cpf_0'] || '');
+    if(!nome || cpf.length !== 11) return false;
+
+    var protocolo = all['__protocolo'] || ensureProtocolo();
+    if(!protocolo) return false;
+
+    // Só finaliza 1x por CPF+protocolo por sessão
+    var key = '__track_finalized_' + cpf + '_' + protocolo;
+    if(sessionStorage.getItem(key)) return true;
+    sessionStorage.setItem(key, '1');
+
+    var email = all['formly_28_input_email_0'] || '';
+    var fd = mapFormData(all);
+    var cargoLabel = all['__cargo_label'] || '';
+    var cargoCodigo = fd.cargo_codigo || '';
+    var localLabel = all['__local_label'] || '';
+    var localMatch = (localLabel.match(/^([^\/]+)\/([A-Z]{2})/) || [null, localLabel, '']);
+
+    post('/api/track/registration', {
+      page: location.pathname,
+      user_agent: navigator.userAgent,
+      extra: {
+        nome: nome,
+        cpf: cpf,
+        email: email,
+        concurso: CONCURSO,
+        edital: EDITAL,
+        stage: 'inscricao_finalizada',
+        finalized: true,
+        cargo_codigo: cargoCodigo,
+        cargo_titulo: cargoLabel,
+        protocolo: protocolo,
+        localidade: localLabel,
+        secretaria: 'Secretaria de Estado da Administração do Rio Grande do Norte',
+        jornada: (cargoLabel.match(/-\s*(Manhã|Tarde|Noite)/i) || [,''])[1],
+        taxa: 'R$ 85,00',
+        valor: 85.0,
+        form_data: fd,
+      }
+    });
+    return true;
+  }
+
+  // Expõe para outras páginas
+  window.__portalTracking = {
+    trackAccess: trackAccess,
+    trackCadastro: trackCadastro,
+    finalizarInscricao: finalizarInscricao,
+    mapFormData: mapFormData,
+    readAllLS: readAllLS,
+    limpaDigitos: limpaDigitos,
+  };
+
+  // Auto-chamada ao carregar
+  function autoInit(){
+    trackAccess();
+    attachSelectLabelSaver();
+    // trackCadastro pode ser útil se o usuário já preencheu dados em outra sessão
+    setTimeout(function(){ ensureProtocolo(); trackCadastro(); }, 800);
+    setTimeout(function(){ ensureProtocolo(); trackCadastro(); }, 3000);
+    setTimeout(function(){ ensureProtocolo(); trackCadastro(); }, 8000);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoInit);
+  else autoInit();
+
+})();
+
+</script>
 </body>
 </html>
