@@ -127,7 +127,7 @@ export default function AdminDashboard() {
     <>
       <div className="dp-page-head">
         <div>
-          <h1 className="dp-page-h1">Dashboard - ENARE 2026</h1>
+          <h1 className="dp-page-h1">Dashboard - Polícia Penal RN</h1>
           <div className="dp-page-sub">Visão geral em tempo real do portal.</div>
         </div>
         <div className="dp-actions">
