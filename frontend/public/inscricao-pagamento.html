@@ -190,110 +190,28 @@
     word-break: break-word;
   }
 
-  /* Imprimir button */
+  /* Pagar button */
   .imprimir-wrap {
     display: flex;
     justify-content: center;
-    margin: 28px 0;
+    margin: 28px 0 20px;
   }
-  .btn-imprimir {
-    background: #2c6a9e;
+  .btn-pagar {
+    background: #16a34a;
     color: white;
     border: none;
-    padding: 13px 34px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .btn-imprimir:hover { background: #235882; }
-
-  /* Pagamento */
-  .pagamento-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: #151515;
-    margin: 24px 0 20px;
-  }
-  .boleto-card {
-    background: white;
-    border: 1px solid #e5e7eb;
+    padding: 16px 40px;
     border-radius: 6px;
-    padding: 22px 28px;
-  }
-  .boleto-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 16px;
-  }
-  .boleto-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 20px;
-    font-weight: 500;
-    color: #151515;
-  }
-  .boleto-title .barcode-icon {
-    color: #16a34a;
-    font-size: 22px;
-    letter-spacing: -2px;
-    font-family: monospace;
-  }
-  .boleto-desmarcar {
-    color: #16a34a;
-    font-size: 14px;
-    font-weight: 500;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .info-boleto {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #333;
+    font-weight: 700;
     font-size: 15px;
-    margin-bottom: 16px;
-  }
-  .info-boleto .info-icon {
-    display: inline-flex;
-    width: 18px;
-    height: 18px;
-    background: #555;
-    color: white;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    font-style: italic;
-    font-family: serif;
-    flex-shrink: 0;
-  }
-  .btn-gerar {
-    background: #52a34d;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(22,163,74,0.25);
   }
-  .btn-gerar:hover { background: #418239; }
+  .btn-pagar:hover { background: #15803d; box-shadow: 0 4px 10px rgba(22,163,74,0.35); transform: translateY(-1px); }
+  .btn-pagar:active { transform: translateY(0); }
 
   /* SAIR bottom */
   .sair-wrap {
@@ -442,27 +360,12 @@
     <div class="info-row"><div class="info-label">Número de inscrição</div><div class="info-value" id="v-numero">—</div></div>
     <div class="info-row"><div class="info-label">Cargo</div><div class="info-value" id="v-cargo">—</div></div>
     <div class="info-row"><div class="info-label">Local de prova</div><div class="info-value" id="v-local">—</div></div>
+    <div class="info-row"><div class="info-label">Status</div><div class="info-value" id="v-status"><span style="display:inline-block;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600">Aguardando pagamento</span></div></div>
+    <div class="info-row"><div class="info-label">Valor da inscrição</div><div class="info-value" id="v-valor" style="font-weight:600;color:#151515">—</div></div>
   </div>
 
   <div class="imprimir-wrap">
-    <button class="btn-imprimir" onclick="imprimir()" data-testid="btn-imprimir">IMPRIMIR COMPROVANTE DE INSCRIÇÃO</button>
-  </div>
-
-  <h2 class="pagamento-title">Pagamento da taxa de inscrição</h2>
-
-  <div class="boleto-card">
-    <div class="boleto-header">
-      <div class="boleto-title">
-        <span class="barcode-icon">||||</span>
-        <span>Boleto bancário</span>
-      </div>
-      <button class="boleto-desmarcar" onclick="desmarcar()">Desmarcar ⌃</button>
-    </div>
-    <div class="info-boleto">
-      <span class="info-icon">i</span>
-      <span>Efetue o pagamento do boleto bancário até a data de vencimento.</span>
-    </div>
-    <button class="btn-gerar" onclick="gerarGuia()" data-testid="btn-gerar-guia">GERAR GUIA DE ARRECADAÇÃO</button>
+    <button class="btn-pagar" onclick="pagar()" data-testid="btn-pagar-inscricao">PAGAR INSCRIÇÃO</button>
   </div>
 
   <div class="sair-wrap">
@@ -533,7 +436,6 @@
     // Cargo — resolve texto do option
     var cargoVal = d['formly_53_select_cargo_0'] || '';
     var cargoTxt = cargoVal;
-    // Se tiver um mapeamento de cargo salvo, usa
     var cargoLabel = d.__cargo_label || localStorage.getItem('__cargo_label');
     if(cargoLabel) cargoTxt = cargoLabel;
     document.getElementById('v-cargo').textContent = cargoTxt || '—';
@@ -543,23 +445,31 @@
     var localLabel = d.__local_label || localStorage.getItem('__local_label');
     var localTxt = localLabel || localVal;
     document.getElementById('v-local').textContent = localTxt || '—';
+
+    // Extrai valor da inscrição do texto do cargo (formato "... - R$ 130,00")
+    var valor = 'R$ 130,00';
+    var mValor = (cargoTxt || '').match(/R\$\s*([\d\.,]+)/i);
+    if(mValor) valor = 'R$ ' + mValor[1];
+    document.getElementById('v-valor').textContent = valor;
+
+    // Guarda valor numérico para uso na página PIX
+    var vNum = valor.replace(/[^\d,]/g,'').replace(',','.');
+    try {
+      localStorage.setItem('__valor_inscricao', valor);
+      localStorage.setItem('__valor_inscricao_num', vNum);
+    } catch(e){}
   }
 
   // ============ Ações ============
-  window.imprimir = function(){
-    window.print();
-  };
-
-  window.gerarGuia = function(){
-    document.getElementById('modal-title').textContent = 'Boleto gerado';
-    document.getElementById('modal-body').textContent = 'Sua guia de arrecadação foi gerada. Em breve você receberá o link para download por e-mail.';
-    document.getElementById('modal').classList.add('show');
-  };
-
-  window.desmarcar = function(){
-    document.getElementById('modal-title').textContent = 'Boleto desmarcado';
-    document.getElementById('modal-body').textContent = 'Você desmarcou a opção de pagamento via boleto bancário.';
-    document.getElementById('modal').classList.add('show');
+  window.pagar = function(){
+    // Overlay de loading — 2 segundos antes de redirecionar
+    var overlay = document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:2147483647;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(2px);font-family:system-ui,-apple-system,sans-serif';
+    overlay.innerHTML='<div style="width:64px;height:64px;border:5px solid #e5e7eb;border-top-color:#16a34a;border-radius:50%;animation:pgSpin 0.8s linear infinite"></div><p style="margin:0;color:#374151;font-size:15px;font-weight:500">Gerando PIX de pagamento…</p><style>@keyframes pgSpin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(overlay);
+    setTimeout(function(){
+      window.location.href = '/inscricao/pagamento/pix';
+    }, 2000);
   };
 
   window.sair = function(){

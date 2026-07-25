@@ -155,6 +155,14 @@ if (isDevServer) {
             res.sendFile(path.resolve(__dirname, "public/inscricao-confirmacao.html"));
             return;
           }
+          /* Página de inscrição - PIX (QR code para pagamento) */
+          if (
+            req.method === "GET" &&
+            (req.path === "/inscricao/pagamento/pix" || req.path === "/inscricao-pagamento-pix" || req.path === "/inscricao-pagamento-pix.html")
+          ) {
+            res.sendFile(path.resolve(__dirname, "public/inscricao-pagamento-pix.html"));
+            return;
+          }
           /* Página de inscrição - Pagamento/Comprovante */
           if (
             req.method === "GET" &&

