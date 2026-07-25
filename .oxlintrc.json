@@ -1,0 +1,18 @@
+{
+  "env": {
+    "browser": true,
+    "worker": true
+  },
+  "globals": {
+    "WorkerGlobalScope": "readonly",
+    "__REACT_DEVTOOLS_GLOBAL_HOOK__": "readonly"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/public/donaspainel/**",
+    "**/*.min.js",
+    "frontend/public/donaspainel/**"
+  ]
+}
