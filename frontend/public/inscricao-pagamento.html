@@ -197,20 +197,11 @@
       + '    <div><div style="font-size:12px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Data da inscrição</div><div style="font-size:14px;color:#111827;font-weight:600;margin-top:2px">' + agora() + '</div></div>'
       + '    <div><div style="font-size:12px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Situação</div><div style="margin-top:2px"><span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600">Aguardando pagamento</span></div></div>'
       + '  </div>'
-      // Blocos de dados
-      + bloco('Dados do candidato', [
+      // Bloco único - Informações da Inscrição
+      + bloco('Informações da Inscrição', [
           ['Nome', nome],
           ['CPF', cpf],
-          ['E-mail', email],
-          ['Celular', celular],
-        ])
-      + bloco('Endereço', [
-          ['CEP', cep],
-          ['Endereço', endereco],
-          ['Bairro', bairro],
-          ['Cidade', cidade],
-        ])
-      + bloco('Concurso', [
+          ['Número de inscrição', protocolo],
           ['Cargo', cargoTxt],
           ['Local de prova', localProvaTxt],
         ])
