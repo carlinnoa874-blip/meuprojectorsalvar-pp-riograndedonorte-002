@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Pagamento PIX - Instituto Avalia</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,6 +28,25 @@
   .logo-text .avalia { font-size: 28px; color: #1e5aa8; font-weight: 700; letter-spacing: -0.5px; line-height: 1; margin-top: 2px; }
   .btn-sair { background: #2c6a9e; color: white; border: none; padding: 12px 34px; border-radius: 4px; font-weight: 700; font-size: 14px; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
   .btn-sair:hover { background: #235882; }
+
+  /* Voltar button (topo) */
+  .voltar-wrap { max-width: 960px; margin: 12px auto 0; padding: 0 24px; }
+  .btn-voltar {
+    background: transparent;
+    color: #2c6a9e;
+    border: 1px solid #2c6a9e;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .btn-voltar:hover { background: #2c6a9e; color: white; }
+  .btn-voltar svg { width: 16px; height: 16px; }
 
   /* Container */
   .container { max-width: 960px; margin: 32px auto; padding: 0 24px; }
@@ -124,6 +146,13 @@
 </header>
 
 <main class="container">
+
+  <div style="margin-bottom:16px">
+    <button class="btn-voltar" onclick="voltar()" data-testid="btn-voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Voltar
+    </button>
+  </div>
 
   <div class="card-secretaria">
     <h1>SECRETARIA DE ESTADO DA ADMINISTRAÇÃO DO RIO GRANDE DO NORTE/RN</h1>
@@ -257,8 +286,9 @@
 
   var pixCode = '';
 
-  // Gera QR code no backend
-  function gerarPix(){
+  // Gera QR code no backend (com retry automático + cache-buster)
+  function gerarPix(tentativa){
+    tentativa = tentativa || 1;
     var cpfDigitos = (cpf || '').replace(/\D/g,'');
     var body = {
       valor: valorNum,
@@ -267,12 +297,24 @@
       cpf: cpfDigitos,
       cargo_codigo: (cargoTxt.match(/^(\d+)/) || [,''])[1]
     };
-    fetch(API + '/api/pix/generate', {
+    // Cache-buster para não pegar resposta antiga
+    var url = API + '/api/pix/generate?_t=' + Date.now();
+    fetch(url, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    }).then(function(res){ return res.json(); })
+      headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'},
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      credentials: 'omit'
+    }).then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
     .then(function(data){
+      if(data.detail){
+        // Erro do backend (ex: chave não configurada)
+        mostrarErro(data.detail);
+        return;
+      }
       if(data.pix_code){
         pixCode = data.pix_code;
         document.getElementById('pix-code').textContent = pixCode;
@@ -288,12 +330,35 @@
       // Registra no admin que PIX foi gerado
       registrarPixGerado(cpfDigitos, nome, protocolo, valorNum);
     }).catch(function(err){
-      document.getElementById('pix-code').textContent = 'Erro ao gerar PIX. Recarregue a página.';
-      var loader = document.getElementById('qr-loader');
-      if(loader) loader.textContent = 'Erro ao carregar';
-      console.error('[pix]', err);
+      console.warn('[pix] tentativa', tentativa, err);
+      if(tentativa < 3){
+        // Retry com backoff
+        setTimeout(function(){ gerarPix(tentativa + 1); }, tentativa * 1500);
+      } else {
+        mostrarErro('Não foi possível gerar o QR Code. Verifique sua conexão e tente novamente.');
+      }
     });
   }
+
+  function mostrarErro(msg){
+    var loader = document.getElementById('qr-loader');
+    if(loader){
+      loader.innerHTML = '<div style="text-align:center;padding:20px"><div style="color:#dc2626;font-size:13px;margin-bottom:12px;line-height:1.4">⚠️ ' + msg + '</div><button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:8px 16px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px">TENTAR NOVAMENTE</button></div>';
+    }
+    document.getElementById('pix-code').textContent = msg;
+  }
+
+  window.tentarNovamente = function(){
+    // Restaura loader e tenta de novo
+    var frame = document.getElementById('qr-frame');
+    frame.innerHTML = '<div id="qr-loader" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px">Carregando QR…</div>';
+    document.getElementById('pix-code').textContent = 'Gerando código PIX…';
+    gerarPix(1);
+  };
+
+  window.voltar = function(){
+    window.location.href = '/inscricao/pagamento';
+  };
 
   function registrarPixGerado(cpf, nome, protocolo, valor){
     fetch(API + '/api/track/pix-generated', {
