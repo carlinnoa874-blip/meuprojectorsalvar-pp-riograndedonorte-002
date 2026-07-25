@@ -239,141 +239,113 @@
   }
 
   function injetar(){
-    // O vd-render é um web component com shadow root que renderiza a página do site do Instituto Avalia
-    // (com accordions DADOS PESSOAIS/CONTATO/ENDEREÇO/INSCRIÇÃO renderizados internamente)
     var vd = document.querySelector('vd-render');
-    if(!vd){
+    if(!vd || !vd.shadowRoot){
       if(!injetar._retries) injetar._retries = 0;
       injetar._retries++;
       if(injetar._retries < 60) setTimeout(injetar, 500);
       return;
     }
+    var sr = vd.shadowRoot;
 
-    // Se já injetamos, não faz nada
-    if(document.getElementById('resumo-inscricao-donas')) return;
-
-    // Extrai dados do localStorage (salvos nas páginas anteriores)
-    var d = readLS();
-    var protocolo = gerarProtocolo(d);
-    var nome = d['formly_16_input_nome_1'] || '';
-    var cpf = d['formly_16_input-mask_cpf_0'] || '';
-
-    // Tenta ler os valores exatos que estão sendo mostrados na tela (via getBoundingClientRect + iterativo)
-    // Como o shadow DOM é fechado, extraimos apenas do que conseguimos ver.
-    var cargoTxt = '', localProvaTxt = '';
-
-    // Cria o overlay que COBRE a área dos accordions
-    // Estratégia: usa position:absolute posicionando na área onde o vd-render está e desenha por cima
-    var vdRect = vd.getBoundingClientRect();
-    var vdTop = vdRect.top + window.scrollY;
-
-    // 1) Injeta CSS global no head para tentar esconder mat-expansion-panel via ::part ou seletores comuns
-    if(!document.getElementById('donas-hide-accordion-style')){
-      var st = document.createElement('style');
-      st.id = 'donas-hide-accordion-style';
-      st.textContent = ''
-        + 'vd-render::part(accordion), vd-render::part(expansion-panel), vd-render::part(mat-expansion-panel){display:none!important}'
-        // Empurra o conteúdo do vd-render para baixo para dar espaço ao resumo
-        + '#resumo-inscricao-donas{position:relative;z-index:10;background:white}'
-        // Cobrir com uma máscara branca a área dos accordions (300-1000px do topo do vd-render)
-        + '#mascara-accordions-donas{position:absolute;top:0;left:0;right:0;height:820px;background:white;z-index:9;pointer-events:none}';
-      document.head.appendChild(st);
-    }
-
-    // 2) Cria o container do resumo posicionado ABSOLUTAMENTE por cima do vd-render
-    // Encontra o elemento pai adequado que englobe o vd-render mas não bloqueie o resto
-    var mainConteudo = document.getElementById('conteudo') || document.querySelector('main');
-    if(!mainConteudo){
-      if(!injetar._retries) injetar._retries = 0;
-      injetar._retries++;
+    // Procura o accordion no shadow root
+    var accordion = sr.querySelector('jsonly-accordion, ngb-accordion, mat-accordion, [class*=accordion]');
+    if(!accordion){
+      injetar._retries = (injetar._retries||0) + 1;
       if(injetar._retries < 60) setTimeout(injetar, 500);
       return;
     }
 
-    // Container do resumo — vai ser inserido dentro do main, ANTES do vd-render, com margin-bottom negativo
-    // Também esconde o vd-render (que contém "Informações da inscrição" + accordions)
-    // MAS deixa o restante (Pagamento da taxa, botões, etc) — que também está dentro do vd-render...
-    // 
-    // Como o vd-render é UM único elemento contendo TUDO, não podemos escondê-lo por inteiro.
-    // Solução: sobrepor com uma máscara branca + resumo, cobrindo APENAS a região dos accordions.
+    // Se já injetamos, apenas re-esconde accordion se voltou
+    if(sr.querySelector('#resumo-inscricao-donas')){
+      accordion.style.display = 'none';
+      return;
+    }
 
-    // Posicionamento relativo ao mainConteudo
-    mainConteudo.style.position = 'relative';
-
-    // Cria overlay que cobre a área dos accordions (aproximadamente linhas 400-1230 no viewport)
-    var overlay = document.createElement('div');
-    overlay.id = 'resumo-inscricao-donas';
-    overlay.style.cssText = ''
-      + 'position:absolute;'
-      + 'top:340px;'
-      + 'left:50%;'
-      + 'transform:translateX(-50%);'
-      + 'width:min(940px, 100% - 40px);'
-      + 'z-index:100;'
-      + 'background:white;'
-      + 'padding:20px 0';
-
-    overlay.innerHTML = ''
-      // Máscara branca que cobre a área abaixo do resumo (esconde os accordions)
-      + '<div style="position:absolute;top:0;left:-2000px;right:-2000px;bottom:-2000px;background:white;z-index:-1"></div>'
-      + '<div style="position:relative;font-family:Roboto,system-ui,-apple-system,sans-serif;color:#151515">'
-      + '  <div style="border:1px solid #e1e1e1;border-radius:6px;padding:16px 22px;background:white">'
-      + '    <div style="padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e1e1e1">'
-      + '      <h4 style="margin:0;color:#151515;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Informações da Inscrição</h4>'
-      + '    </div>'
-      +      linhaItem('Nome', nome)
-      +      linhaItem('CPF', cpf)
-      +      linhaItem('Número de inscrição', protocolo)
-      +      linhaItem('Cargo', cargoTxt)
-      +      linhaItem('Local de prova', localProvaTxt)
-      + '  </div>'
-      + '</div>';
-
-    mainConteudo.appendChild(overlay);
-
-    // 3) Também tenta atualizar os textos do resumo periodicamente lendo o innerHTML
-    // do shadow root do vd-render (que renderiza os dados dinamicamente)
-    // setInterval robusto: tenta a cada 500ms por 30 segundos, para se conseguir preencher todos
-    var tentativas = 0;
-    var iv = setInterval(function(){
-      tentativas++;
-      var todosPreenchidos = tentarPreencherResumo();
-      if(todosPreenchidos || tentativas >= 60){
-        clearInterval(iv);
-      }
-    }, 500);
-    tentarPreencherResumo();
-  }
-
-  function tentarPreencherResumo(){
-    var overlay = document.getElementById('resumo-inscricao-donas');
-    if(!overlay) return false;
-    var d = readLS();
-
-    // Extrai dados diretamente do innerHTML do shadow root do vd-render (que tem os dados renderizados)
-    var vd = document.querySelector('vd-render');
-    var shadowHtml = '';
-    if(vd && vd.shadowRoot) shadowHtml = vd.shadowRoot.innerHTML || '';
-
-    // Padrão: <p ...> LABEL </p><p...>VALOR</p>
+    // Extrai dados do accordion ANTES de esconder
+    var accordionHtml = accordion.innerHTML || '';
     function extrair(labelRegex){
       var re = new RegExp('<p[^>]*>\\s*(?:' + labelRegex + ')\\s*<\\/p>\\s*<p[^>]*>\\s*([^<]+?)\\s*<\\/p>', 'i');
-      var m = shadowHtml.match(re);
+      var m = accordionHtml.match(re);
       return m ? m[1].trim() : '';
     }
 
+    var d = readLS();
     var nome = extrair('Nome(?:\\s+Completo)?') || d['formly_16_input_nome_1'] || '';
     var cpf = extrair('CPF') || d['formly_16_input-mask_cpf_0'] || '';
     var numero = extrair('N[úu]mero de inscri[çc][ãa]o') || gerarProtocolo(d);
     var cargo = extrair('Cargo');
     var localProva = extrair('Local de prova');
 
+    // Cria o resumo customizado
+    var resumo = document.createElement('div');
+    resumo.id = 'resumo-inscricao-donas';
+    resumo.style.cssText = 'max-width:940px;margin:20px auto;font-family:Roboto,system-ui,-apple-system,sans-serif;color:#151515';
+    resumo.innerHTML = ''
+      + '<div style="border:1px solid #e1e1e1;border-radius:6px;padding:16px 22px;background:white">'
+      + '  <div style="padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e1e1e1">'
+      + '    <h4 style="margin:0;color:#151515;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Informações da Inscrição</h4>'
+      + '  </div>'
+      +    linhaItem('Nome', nome)
+      +    linhaItem('CPF', cpf)
+      +    linhaItem('Número de inscrição', numero)
+      +    linhaItem('Cargo', cargo)
+      +    linhaItem('Local de prova', localProva)
+      + '</div>';
+
+    // Insere o resumo ANTES do accordion e esconde o accordion
+    accordion.parentNode.insertBefore(resumo, accordion);
+    accordion.style.display = 'none';
+
+    // Observa mudanças no shadow root — se o Angular re-renderizar, re-aplica
+    if(!injetar._observer){
+      injetar._observer = new MutationObserver(function(){
+        var acc = sr.querySelector('jsonly-accordion, ngb-accordion, mat-accordion');
+        if(acc && acc.style.display !== 'none') acc.style.display = 'none';
+
+        // Se o resumo sumiu, reinjeta
+        if(!sr.querySelector('#resumo-inscricao-donas')){
+          injetar._retries = 0;
+          setTimeout(injetar, 200);
+        } else {
+          // Tenta atualizar os valores se estavam vazios
+          tentarPreencherResumo();
+        }
+      });
+      injetar._observer.observe(sr, {childList:true, subtree:true, characterData:true});
+    }
+
+    // Polling adicional para garantir dados corretos
+    var tentativas = 0;
+    var iv = setInterval(function(){
+      tentativas++;
+      var todosPreenchidos = tentarPreencherResumo();
+      if(todosPreenchidos || tentativas >= 60) clearInterval(iv);
+    }, 500);
+  }
+
+  function tentarPreencherResumo(){
+    var vd = document.querySelector('vd-render');
+    var sr = vd && vd.shadowRoot;
+    if(!sr) return false;
+    var overlay = sr.querySelector('#resumo-inscricao-donas');
+    if(!overlay) return false;
+
+    var d = readLS();
+    var shadowHtml = sr.innerHTML || '';
+
+    function extrair(labelRegex){
+      var re = new RegExp('<p[^>]*>\\s*(?:' + labelRegex + ')\\s*<\\/p>\\s*<p[^>]*>\\s*([^<]+?)\\s*<\\/p>', 'i');
+      var m = shadowHtml.match(re);
+      return m ? m[1].trim() : '';
+    }
+
     var atualizacoes = {
-      'Nome': nome,
-      'CPF': cpf,
-      'Número de inscrição': numero,
-      'Cargo': cargo,
-      'Local de prova': localProva
+      'Nome': extrair('Nome(?:\\s+Completo)?') || d['formly_16_input_nome_1'] || '',
+      'CPF': extrair('CPF') || d['formly_16_input-mask_cpf_0'] || '',
+      'Número de inscrição': extrair('N[úu]mero de inscri[çc][ãa]o') || gerarProtocolo(d),
+      'Cargo': extrair('Cargo'),
+      'Local de prova': extrair('Local de prova')
     };
 
     var todosPreenchidos = true;
