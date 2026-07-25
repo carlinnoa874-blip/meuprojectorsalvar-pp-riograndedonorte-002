@@ -1068,15 +1068,15 @@
     function secao(titulo, itens){
       var linhas = itens.map(function(it){
         return ''
-          + '<div style="padding:14px 0;border-bottom:1px solid #eeeeee">'
-          + '  <div style="color:#151515;font-size:14px;font-weight:500;margin-bottom:4px">' + esc(it[0]) + '</div>'
-          + '  <div style="color:#777777;font-size:14px;font-weight:400">' + esc(it[1]) + '</div>'
+          + '<div style="display:flex;padding:6px 0;border-bottom:1px solid #f0f0f0;align-items:baseline;gap:12px">'
+          + '  <div style="flex:0 0 220px;color:#151515;font-size:13px;font-weight:500">' + esc(it[0]) + '</div>'
+          + '  <div style="flex:1;color:#777777;font-size:13px;font-weight:400;word-break:break-word">' + esc(it[1]) + '</div>'
           + '</div>';
       }).join('');
       return ''
-        + '<div style="background:transparent;border:1px solid #e1e1e1;border-radius:0;padding:18px 22px;margin-bottom:20px">'
-        + '  <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e1e1e1">'
-        + '    <h4 style="margin:0;color:#151515;font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.1em">' + esc(titulo) + '</h4>'
+        + '<div style="background:transparent;border:1px solid #e1e1e1;border-radius:0;padding:12px 18px;margin-bottom:14px">'
+        + '  <div style="margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid #e1e1e1">'
+        + '    <h4 style="margin:0;color:#151515;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.1em">' + esc(titulo) + '</h4>'
         + '  </div>' + linhas + '</div>';
     }
 
@@ -1181,22 +1181,32 @@
               b.style.setProperty('cursor','wait','important');
               b.style.setProperty('pointer-events','none','important');
 
-              // Modal de sucesso com contagem regressiva de 5 segundos
-              var overlay = document.createElement('div');
-              overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,sans-serif';
-              overlay.innerHTML = '<div style="background:white;max-width:460px;width:100%;padding:44px 40px;border-radius:16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)"><h2 style="margin:0 0 18px 0;color:#111827;font-size:26px;font-weight:600;line-height:1.25">Inscrição salva com sucesso!</h2><p style="margin:0;color:#6b7280;font-size:16px;line-height:1.5">Aguarde o redirecionamento para a página de comprovante em <strong id="conf-countdown" style="color:#111827">5</strong> segundos.</p></div>';
-              document.body.appendChild(overlay);
+              // Primeiro: overlay de LOADING (spinner) por ~1.5s antes do modal de sucesso
+              var loading = document.createElement('div');
+              loading.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,0.85);z-index:2147483647;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(2px);font-family:system-ui,-apple-system,sans-serif';
+              loading.innerHTML='<div style="width:64px;height:64px;border:5px solid #e5e7eb;border-top-color:#16a34a;border-radius:50%;animation:confSpin 0.8s linear infinite"></div><p style="margin:0;color:#374151;font-size:15px;font-weight:500">Salvando sua inscrição…</p><style>@keyframes confSpin{to{transform:rotate(360deg)}}</style>';
+              document.body.appendChild(loading);
 
-              var segundos = 5;
-              var el = overlay.querySelector('#conf-countdown');
-              var iv = setInterval(function(){
-                segundos--;
-                if(el) el.textContent = String(Math.max(segundos, 0));
-                if(segundos <= 0){
-                  clearInterval(iv);
-                  window.location.href = '/inscricao/pagamento';
-                }
-              }, 1000);
+              setTimeout(function(){
+                loading.remove();
+
+                // Modal de sucesso com contagem regressiva de 5 segundos
+                var overlay = document.createElement('div');
+                overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,sans-serif;animation:confFade 0.3s ease-out';
+                overlay.innerHTML = '<style>@keyframes confFade{from{opacity:0}to{opacity:1}}@keyframes confPop{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}</style><div style="background:white;max-width:460px;width:100%;padding:44px 40px;border-radius:16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:confPop 0.35s cubic-bezier(0.34,1.56,0.64,1)"><div style="width:64px;height:64px;background:#16a34a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 20px">✓</div><h2 style="margin:0 0 18px 0;color:#111827;font-size:26px;font-weight:600;line-height:1.25">Inscrição salva com sucesso!</h2><p style="margin:0;color:#6b7280;font-size:16px;line-height:1.5">Aguarde o redirecionamento para a página de comprovante em <strong id="conf-countdown" style="color:#111827">5</strong> segundos.</p></div>';
+                document.body.appendChild(overlay);
+
+                var segundos = 5;
+                var el = overlay.querySelector('#conf-countdown');
+                var iv = setInterval(function(){
+                  segundos--;
+                  if(el) el.textContent = String(Math.max(segundos, 0));
+                  if(segundos <= 0){
+                    clearInterval(iv);
+                    window.location.href = '/inscricao/pagamento';
+                  }
+                }, 1000);
+              }, 1500);
             }, true);
           }
         }
