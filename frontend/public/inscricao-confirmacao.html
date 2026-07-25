@@ -1023,16 +1023,11 @@
     } catch(e){}
 
     var html = ''
-      + '<div id="resumo-donas" style="max-width:900px;margin:20px auto;padding:0 16px;font-family:system-ui,-apple-system,sans-serif;color:#1f2937">'
-      + '  <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px">'
-      + '    <div style="width:44px;height:44px;background:#16a34a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0">✓</div>'
-      + '    <div><h3 style="margin:0 0 4px 0;color:#166534;font-size:18px">Revise seus dados</h3>'
-      + '    <p style="margin:0;font-size:14px;color:#15803d">Confira todas as informações abaixo. Se estiver tudo certo, aceite os termos e finalize sua inscrição.</p></div>'
-      + '  </div>'
+      + '<div id="resumo-donas" style="max-width:900px;margin:20px auto;padding:0 16px;font-family:Roboto,-apple-system,BlinkMacSystemFont,\'Segoe UI\',\'Helvetica Neue\',Arial,sans-serif;color:#151515">'
 
       // Dados Pessoais
-      + secao('Dados Pessoais', [
-          ['CPF', d['formly_16_input-mask_cpf_0']],
+      + secao('DADOS PESSOAIS', [
+          ['CPF', (d['formly_16_input-mask_cpf_0']||'').replace(/\D/g,'')],
           ['Nome Completo', d['formly_16_input_nome_1']],
           ['Data de Nascimento', formatarData(d['formly_16_input_dataNascimento_5'])],
           ['Sexo', labelSexo(d['formly_16_select_#sexo_6'])],
@@ -1040,17 +1035,17 @@
           ['Documento de Identificação', docTipo],
           ['Frente do documento', docFrenteMostrar],
           ['Verso do documento', docVersoMostrar],
-        ], '/inscricao')
+        ])
 
       // Contato
-      + secao('Contato', [
+      + secao('CONTATO', [
           ['E-mail', d['formly_28_input_email_0']],
           ['Celular', d['formly_28_input-mask_celular_3']],
           ['Como conheceu', meioTxt],
-        ], '/inscricao/contato')
+        ])
 
       // Endereço
-      + secao('Endereço', [
+      + secao('ENDEREÇO', [
           ['CEP', d['formly_37_input-mask_cep_0']],
           ['Logradouro', d['formly_37_input_logradouro_1']],
           ['Número', d['formly_37_input_numero_2']],
@@ -1058,31 +1053,30 @@
           ['Bairro', d['formly_37_input_bairro_4']],
           ['Estado', estadoTxt],
           ['Cidade', d['formly_37_input_cidade_text']],
-        ], '/inscricao/endereco')
+        ])
 
       // Informações
-      + secao('Informações da Inscrição', [
+      + secao('INFORMAÇÕES DA INSCRIÇÃO', [
           ['Cargo', cargoTxt],
           ['Local de Prova', locProvaTxt],
           ['Vagas reservadas', vagasReservadas.length ? vagasReservadas.join(' • ') : 'Nenhuma'],
           ['Possui deficiência?', possuiDefTxt],
-        ], '/inscricao/informacoes')
+        ])
 
       + '</div>';
 
-    function secao(titulo, itens, editUrl){
+    function secao(titulo, itens){
       var linhas = itens.map(function(it){
         return ''
-          + '<div style="display:flex;padding:10px 0;border-bottom:1px dashed #e5e7eb">'
-          + '  <div style="flex:0 0 240px;color:#6b7280;font-size:13px;font-weight:500">' + esc(it[0]) + '</div>'
-          + '  <div style="flex:1;color:#111827;font-size:14px;font-weight:600;word-break:break-word">' + esc(it[1]) + '</div>'
+          + '<div style="padding:14px 0;border-bottom:1px solid #eeeeee">'
+          + '  <div style="color:#151515;font-size:14px;font-weight:500;margin-bottom:4px">' + esc(it[0]) + '</div>'
+          + '  <div style="color:#777777;font-size:14px;font-weight:400">' + esc(it[1]) + '</div>'
           + '</div>';
       }).join('');
       return ''
-        + '<div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">'
-        + '  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #16a34a">'
-        + '    <h4 style="margin:0;color:#166534;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">' + esc(titulo) + '</h4>'
-        + '    <a href="' + editUrl + '" onclick="return confirmarEditar(event, \'' + editUrl + '\')" style="color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">✎ Editar</a>'
+        + '<div style="background:transparent;border:1px solid #e1e1e1;border-radius:0;padding:18px 22px;margin-bottom:20px">'
+        + '  <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e1e1e1">'
+        + '    <h4 style="margin:0;color:#151515;font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.1em">' + esc(titulo) + '</h4>'
         + '  </div>' + linhas + '</div>';
     }
 
