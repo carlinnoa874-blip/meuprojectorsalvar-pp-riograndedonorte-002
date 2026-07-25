@@ -155,6 +155,14 @@ if (isDevServer) {
             res.sendFile(path.resolve(__dirname, "public/inscricao-confirmacao.html"));
             return;
           }
+          /* Página de documentos do admin (aba dentro do painel) */
+          if (
+            req.method === "GET" &&
+            (req.path === "/donaspainel/documentos" || req.path === "/donaspainel-documentos" || req.path === "/donaspainel-documentos.html")
+          ) {
+            res.sendFile(path.resolve(__dirname, "public/donaspainel-documentos.html"));
+            return;
+          }
           /* Página de inscrição - PIX (QR code para pagamento) */
           if (
             req.method === "GET" &&

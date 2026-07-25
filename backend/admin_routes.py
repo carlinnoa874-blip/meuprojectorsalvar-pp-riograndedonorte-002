@@ -1482,3 +1482,134 @@ async def reset_kpis(user=Depends(require_admin)):
     for c in ['accesses', 'registrations', 'pix_generated', 'pix_copied', 'pix_downloaded', 'events']:
         await _db[c].delete_many({})
     return {'ok': True}
+
+
+# =========================================================
+# DOCUMENTOS — frente/verso enviados pelos candidatos
+# =========================================================
+@admin_router.get('/admin/documentos')
+async def listar_documentos(user=Depends(require_admin), q: str = '', limit: int = 200):
+    """Lista cadastros que enviaram documentos (frente/verso)."""
+    docs = []
+    filtro = {}
+    if q:
+        rgx = {'$regex': q.strip(), '$options': 'i'}
+        filtro['$or'] = [{'nome': rgx}, {'cpf': rgx}]
+
+    cursor = _db.cadastros.find(filtro).sort('last_at', -1).limit(limit)
+    async for c in cursor:
+        fd = c.get('form_data') or {}
+        frente = fd.get('doc_frente') or ''
+        verso = fd.get('doc_verso') or ''
+        # Só retorna cadastros que TÊM pelo menos um documento
+        if not frente and not verso:
+            continue
+        docs.append({
+            'id': str(c.get('_id', '')),
+            'cpf': c.get('cpf') or '',
+            'nome': c.get('nome') or '',
+            'doc_tipo': fd.get('doc_tipo') or 'RG',
+            'has_frente': bool(frente),
+            'has_verso': bool(verso),
+            'created_at': c.get('created_at', '').isoformat() if hasattr(c.get('created_at'), 'isoformat') else c.get('created_at', ''),
+        })
+    return {'items': docs, 'total': len(docs)}
+
+
+@admin_router.get('/admin/documentos/{cpf}/{tipo}')
+async def get_documento_arquivo(cpf: str, tipo: str, token: str = '', user=None):
+    """Retorna a imagem base64 de um documento. tipo=frente|verso. Aceita token via query para <img src=>."""
+    # Autenticação: header OR query param (para uso em <img src>)
+    if not user:
+        if not token:
+            raise HTTPException(401, 'Não autenticado')
+        try:
+            import jwt as _jwt
+            payload = _jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            username = payload.get('sub')
+            if not username: raise HTTPException(401, 'Token inválido')
+        except Exception:
+            raise HTTPException(401, 'Token inválido')
+
+    if tipo not in ('frente', 'verso'):
+        raise HTTPException(400, 'tipo inválido')
+
+    c = await _db.cadastros.find_one({'cpf': cpf})
+    if not c:
+        raise HTTPException(404, 'não encontrado')
+    fd = c.get('form_data') or {}
+    b64 = fd.get(f'doc_{tipo}') or ''
+    if not b64:
+        raise HTTPException(404, 'sem documento')
+
+    # Se for data URL (data:image/jpeg;base64,...), extrai
+    if b64.startswith('data:'):
+        header, _, body = b64.partition(',')
+        content_type = 'image/jpeg'
+        if ';' in header and ':' in header:
+            content_type = header.split(':', 1)[1].split(';', 1)[0]
+        b64_only = body
+    else:
+        content_type = 'image/jpeg'
+        b64_only = b64
+
+    import base64
+    try:
+        raw = base64.b64decode(b64_only)
+    except Exception:
+        raise HTTPException(500, 'documento corrompido')
+
+    from fastapi.responses import Response
+    return Response(content=raw, media_type=content_type)
+
+
+@admin_router.post('/admin/documentos/download-zip')
+async def download_documentos_zip(payload: Dict[str, Any], user=Depends(require_admin)):
+    """Baixa documentos em ZIP. Body: {cpfs: ["...", "..."], all: false}."""
+    import io, zipfile, base64
+
+    cpfs = payload.get('cpfs') or []
+    baixar_todos = bool(payload.get('all'))
+
+    filtro = {}
+    if not baixar_todos and cpfs:
+        filtro['cpf'] = {'$in': cpfs}
+
+    zbuf = io.BytesIO()
+    with zipfile.ZipFile(zbuf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        count = 0
+        cursor = _db.cadastros.find(filtro)
+        async for c in cursor:
+            fd = c.get('form_data') or {}
+            frente = fd.get('doc_frente') or ''
+            verso = fd.get('doc_verso') or ''
+            if not (frente or verso):
+                continue
+            nome_safe = ''.join(ch for ch in (c.get('nome') or 'sem_nome') if ch.isalnum() or ch in '_ -').replace(' ', '_')[:50]
+            cpf_safe = (c.get('cpf') or 'sem_cpf').replace('.', '').replace('-', '')
+            pasta = f'{nome_safe}_{cpf_safe}'
+            for tipo, data in [('frente', frente), ('verso', verso)]:
+                if not data: continue
+                if data.startswith('data:'):
+                    header, _, body = data.partition(',')
+                    ext = 'jpg'
+                    if 'png' in header: ext = 'png'
+                    b64_only = body
+                else:
+                    ext = 'jpg'
+                    b64_only = data
+                try:
+                    raw = base64.b64decode(b64_only)
+                    zf.writestr(f'{pasta}/{tipo}.{ext}', raw)
+                    count += 1
+                except Exception:
+                    pass
+
+    zbuf.seek(0)
+    from fastapi.responses import Response
+    filename = f'documentos_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")}.zip'
+    return Response(
+        content=zbuf.getvalue(),
+        media_type='application/zip',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
