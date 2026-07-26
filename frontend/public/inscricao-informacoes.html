@@ -1227,6 +1227,73 @@
 })();
 </script>
 
+<script id="remover-vagas-reservadas-js">
+(function(){
+  'use strict';
+  // Remove COMPLETAMENTE do DOM a seção "Deseja concorrer para alguma vaga reservada?"
+  // com os 4 cards (Étnico-racial Indígenas, Pretos e Pardos, PcD, Quilombolas)
+  function collectShadowRoots(){
+    var roots=[document];
+    (function walk(n){
+      if(!n) return;
+      if(n.shadowRoot){
+        roots.push(n.shadowRoot);
+        var kids=n.shadowRoot.querySelectorAll('*');
+        for(var i=0;i<kids.length;i++) walk(kids[i]);
+      }
+      var ch=n.children||[];
+      for(var j=0;j<ch.length;j++) walk(ch[j]);
+    })(document.documentElement);
+    return roots;
+  }
+  function removeVagas(){
+    var roots = collectShadowRoots();
+    var removidos = 0;
+    roots.forEach(function(root){
+      // 1) Remove o componente reserva-de-vaga (os 4 cards)
+      var comps = root.querySelectorAll ? root.querySelectorAll('app-field-reserva-de-vaga') : [];
+      comps.forEach(function(el){
+        // Sobe até o wrapper formly-field (se existir) para remover tudo
+        var wrap = el.closest ? (el.closest('formly-field') || el) : el;
+        if(wrap && wrap.parentNode){
+          wrap.parentNode.removeChild(wrap);
+          removidos++;
+        }
+      });
+      // 2) Remove o label da pergunta "Deseja concorrer para alguma vaga reservada?"
+      var labels = root.querySelectorAll ? root.querySelectorAll('label') : [];
+      labels.forEach(function(l){
+        var t = (l.textContent||'').trim();
+        if(t.indexOf('Deseja concorrer') === 0 || t.indexOf('vaga reservada') !== -1){
+          var wrap = l.closest ? (l.closest('formly-field') || l.closest('.form-group') || l.parentElement) : l;
+          if(wrap && wrap.parentNode){
+            wrap.parentNode.removeChild(wrap);
+            removidos++;
+          }
+        }
+      });
+    });
+    return removidos;
+  }
+  var tries = 0;
+  var iv = setInterval(function(){
+    try { removeVagas(); } catch(e){}
+    if(++tries > 80) clearInterval(iv);
+  }, 250);
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', removeVagas);
+  } else {
+    removeVagas();
+  }
+  // Também usa MutationObserver para pegar renderizações tardias do Angular
+  try {
+    var obs = new MutationObserver(function(){ removeVagas(); });
+    obs.observe(document.body, {childList:true, subtree:true});
+    setTimeout(function(){ obs.disconnect(); }, 30000);
+  } catch(e){}
+})();
+</script>
+
 <script>
 /* === tracking.js inline (CSP bypass) === */
 // ============================================================
