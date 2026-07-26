@@ -1082,6 +1082,40 @@
     .mb-3 { margin-bottom: 8px !important; }
     [class*="col-md-"], [class*="col-sm-"], [class*="col-lg-"] { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
     .row { margin-left: 0 !important; margin-right: 0 !important; }
+    /* Confirmação: quebra os rows label+valor em duas linhas no mobile */
+    #resumo-donas > div > div,
+    #resumo-donas [style*="display:flex"] {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 2px !important;
+      padding: 8px 4px !important;
+    }
+    #resumo-donas [style*="flex:0 0 220px"],
+    #resumo-donas [style*="flex: 0 0 220px"] {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      font-weight: 700 !important;
+      font-size: 12px !important;
+      color: #151515 !important;
+      margin-bottom: 2px !important;
+    }
+    #resumo-donas [style*="flex:1"] {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      font-size: 13px !important;
+      color: #333 !important;
+      word-break: normal !important;
+      overflow-wrap: anywhere !important;
+      padding-left: 0 !important;
+    }
+    #resumo-donas h2, #resumo-donas h3, #resumo-donas h4 {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      margin: 12px 0 4px !important;
+      padding: 6px 8px !important;
+    }
   `;
   function collectShadowRoots(){ var roots=[]; (function walk(n){ if(!n) return; if(n.shadowRoot){ roots.push(n.shadowRoot); var kids=n.shadowRoot.querySelectorAll('*'); for(var i=0;i<kids.length;i++) walk(kids[i]); } var ch=n.children||[]; for(var j=0;j<ch.length;j++) walk(ch[j]); })(document.documentElement); return roots; }
   function inject(){ var roots=collectShadowRoots(); roots.forEach(function(r){ if(r.querySelector && r.querySelector('style[data-shadow-mobile-fix]')) return; var s=document.createElement('style'); s.setAttribute('data-shadow-mobile-fix','1'); s.textContent=css; r.appendChild(s); }); }
