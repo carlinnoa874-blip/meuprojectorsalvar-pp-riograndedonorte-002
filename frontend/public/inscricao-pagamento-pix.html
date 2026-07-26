@@ -251,6 +251,23 @@
 <div class="toast" id="toast">Código copiado!</div>
 
 <script>
+// Nuke qualquer service worker/cache que possa estar servindo versão antiga desta página
+(function(){
+  try {
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        regs.forEach(function(r){ r.unregister(); });
+      }).catch(function(){});
+    }
+    if(window.caches && caches.keys){
+      caches.keys().then(function(keys){
+        keys.forEach(function(k){ caches.delete(k); });
+      }).catch(function(){});
+    }
+  } catch(e){}
+})();
+</script>
+<script>
 (function(){
   var API = window.REACT_APP_BACKEND_URL || window.location.origin;
 
@@ -343,9 +360,9 @@
   function mostrarErro(msg){
     var loader = document.getElementById('qr-loader');
     if(loader){
-      loader.innerHTML = '<div style="text-align:center;padding:20px"><div style="color:#dc2626;font-size:13px;margin-bottom:12px;line-height:1.4">⚠️ ' + msg + '</div><button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:8px 16px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px">TENTAR NOVAMENTE</button></div>';
+      loader.innerHTML = '<div style="text-align:center;padding:14px"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="color:#dc2626;font-size:12px;margin-bottom:14px;line-height:1.4;font-weight:500">' + msg + '</div><button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:10px 20px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">TENTAR NOVAMENTE</button><div style="margin-top:10px;font-size:10px;color:#999">Ou pressione Ctrl+Shift+R para limpar cache</div></div>';
     }
-    document.getElementById('pix-code').textContent = msg;
+    document.getElementById('pix-code').innerHTML = '<button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:8px 18px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px">🔄 Gerar novamente</button>';
   }
 
   window.tentarNovamente = function(){
