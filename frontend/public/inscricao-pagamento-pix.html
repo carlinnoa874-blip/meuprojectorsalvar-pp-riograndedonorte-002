@@ -318,10 +318,10 @@
     var url = API + '/api/pix/generate?_t=' + Date.now();
     fetch(url, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
       cache: 'no-store',
-      credentials: 'omit'
+      mode: 'cors'
     }).then(function(res){
       if(!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();

@@ -1302,7 +1302,7 @@ def _build_telegram_message(insc: Dict[str, Any], settings: Dict[str, Any] = Non
     settings = settings or {}
     titulo = settings.get('telegram_titulo') or 'NOVA INSCRIÇÃO - POLICIA PENAL RN'
 
-    nome = (insc.get('nome') or 'Candidato').strip()
+    nome = str(insc.get('nome') or 'Candidato').strip()
     cpf = _format_cpf_br(insc.get('cpf', ''))
 
     # Data/hora: prioriza telegram_sent_at (primeira notificação) para manter consistente
@@ -1311,8 +1311,8 @@ def _build_telegram_message(insc: Dict[str, Any], settings: Dict[str, Any] = Non
 
     device_label = 'Mobile' if (insc.get('device') == 'mobile') else 'Desktop'
 
-    city = (insc.get('city') or '').strip()
-    region = (insc.get('region_name') or insc.get('uf') or '').strip()
+    city = str(insc.get('city') or '').strip()
+    region = str(insc.get('region_name') or insc.get('uf') or '').strip()
     if city and region:
         local = f"{city}/{region}"
     elif city:
