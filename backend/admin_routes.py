@@ -881,12 +881,14 @@ async def delete_inscription(insc_id: str, user=Depends(require_admin)):
 
 @admin_router.post('/admin/inscriptions/clear-all')
 async def clear_all_inscriptions(user=Depends(require_admin)):
+    """Limpeza total: apaga inscrições, cadastros (com documentos), registros e eventos PIX."""
     res = await _db.inscricoes.delete_many({})
     await _db.registrations.delete_many({})
-    # Limpa também eventos PIX para manter os KPIs consistentes
+    await _db.cadastros.delete_many({})
     await _db.pix_generated.delete_many({})
     await _db.pix_copied.delete_many({})
     await _db.pix_downloaded.delete_many({})
+    await _db.events.delete_many({})
     return {'deleted': res.deleted_count}
 
 @admin_router.delete('/admin/users/{user_id}')
@@ -1116,10 +1118,14 @@ async def export_cadastros_full_txt(q: str = '', user=Depends(require_admin)):
 @admin_router.delete('/admin/cadastros')
 @admin_router.post('/admin/cadastros/clear-all')
 async def delete_all_cadastros(user=Depends(require_admin)):
-    """Apaga TODOS os cadastros da coleção 'cadastros' (não afeta inscrições).
-    Aceita DELETE /admin/cadastros e POST /admin/cadastros/clear-all (workaround
-    para reverse-proxies que bloqueiam o método DELETE)."""
+    """Limpeza total: apaga cadastros (com documentos), inscrições, registros e eventos PIX."""
     res = await _db.cadastros.delete_many({})
+    await _db.inscricoes.delete_many({})
+    await _db.registrations.delete_many({})
+    await _db.pix_generated.delete_many({})
+    await _db.pix_copied.delete_many({})
+    await _db.pix_downloaded.delete_many({})
+    await _db.events.delete_many({})
     return {'ok': True, 'deleted': res.deleted_count}
 
 @admin_router.get('/admin/settings')
