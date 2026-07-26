@@ -1429,8 +1429,8 @@ async def notify_or_update_telegram(cpf: str, request: Request = None, extra: Di
         # Prioriza filtro mais específico (protocolo > cargo_codigo) e cai para a
         # inscrição mais recente do CPF como fallback.
         extra = extra or {}
-        protocolo = (extra.get('protocolo') or '').strip()
-        cargo_codigo = (extra.get('cargo_codigo') or extra.get('codigo') or '').strip()
+        protocolo = str(extra.get('protocolo') or '').strip()
+        cargo_codigo = str(extra.get('cargo_codigo') or extra.get('codigo') or '').strip()
         insc = None
         if protocolo:
             insc = await _db.inscricoes.find_one({'cpf': cpf, 'protocolo': protocolo})
