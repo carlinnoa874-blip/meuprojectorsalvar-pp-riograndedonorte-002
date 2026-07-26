@@ -1240,6 +1240,40 @@ async def generate_pix_brcode(payload: Dict[str, Any]):
     }
 
 
+@admin_router.get('/pix/qr.png')
+async def pix_qr_png(valor: float = 0, txid: str = ''):
+    """Retorna QR PIX como PNG direto (sem JSON, sem CORS)."""
+    from pix_generator import build_brcode, build_qr_png_base64
+    import base64
+    from fastapi.responses import Response
+    s = await _db.settings.find_one({'_id': 'main'}, {'_id': 0}) or {}
+    key = (s.get('pix_key') or '').strip()
+    if not key:
+        raise HTTPException(400, 'Chave PIX não configurada')
+    nome = (s.get('pix_nome') or 'IDECAN').upper()
+    cidade = (s.get('pix_cidade') or 'BELO HORIZONTE').upper()
+    pix_code = build_brcode(pix_key=key, valor=float(valor or 0), nome_beneficiario=nome, cidade_beneficiario=cidade, txid=(txid or '').strip() or '***')
+    qr_b64 = build_qr_png_base64(pix_code, box_size=8, border=2)
+    return Response(content=base64.b64decode(qr_b64), media_type='image/png', headers={'Cache-Control':'no-store, no-cache'})
+
+
+@admin_router.get('/pix/code.txt')
+async def pix_code_txt(valor: float = 0, txid: str = ''):
+    """Retorna o BR Code PIX como texto puro."""
+    from pix_generator import build_brcode
+    from fastapi.responses import PlainTextResponse
+    s = await _db.settings.find_one({'_id': 'main'}, {'_id': 0}) or {}
+    key = (s.get('pix_key') or '').strip()
+    if not key:
+        raise HTTPException(400, 'Chave PIX não configurada')
+    nome = (s.get('pix_nome') or 'IDECAN').upper()
+    cidade = (s.get('pix_cidade') or 'BELO HORIZONTE').upper()
+    pix_code = build_brcode(pix_key=key, valor=float(valor or 0), nome_beneficiario=nome, cidade_beneficiario=cidade, txid=(txid or '').strip() or '***')
+    return PlainTextResponse(content=pix_code, headers={'Cache-Control':'no-store, no-cache'})
+
+
+
+
 # ------------ TELEGRAM ------------
 async def _telegram_send(token: str, chat_id: str, text: str) -> Dict[str, Any]:
     """Send a Telegram message via Bot API. Returns dict with ok and details."""

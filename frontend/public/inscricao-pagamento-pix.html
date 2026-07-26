@@ -287,10 +287,10 @@
   }
 
   var d = readLS();
-  var nome = d['formly_16_input_nome_1'] || '—';
-  var cpf = d['formly_16_input-mask_cpf_0'] || '—';
-  var protocolo = d.__protocolo || localStorage.getItem('__protocolo') || '—';
-  var cargoTxt = d.__cargo_label || localStorage.getItem('__cargo_label') || '—';
+  var nome = String(d['formly_16_input_nome_1'] || '—');
+  var cpf = String(d['formly_16_input-mask_cpf_0'] || '—');
+  var protocolo = String(d.__protocolo || localStorage.getItem('__protocolo') || '—');
+  var cargoTxt = String(d.__cargo_label || localStorage.getItem('__cargo_label') || '—');
   var valorStr = d.__valor_inscricao || localStorage.getItem('__valor_inscricao') || 'R$ 130,00';
   var valorNum = parseFloat(d.__valor_inscricao_num || localStorage.getItem('__valor_inscricao_num') || '130.00');
 
@@ -303,74 +303,48 @@
 
   var pixCode = '';
 
-  // Gera QR code no backend (com retry automático + cache-buster)
-  function gerarPix(tentativa){
-    tentativa = tentativa || 1;
+  // ESTRATÉGIA NOVA: usa <img src="..."> e <fetch text/plain> — sem CORS, sem JSON parsing
+  function gerarPix(){
     var cpfDigitos = (cpf || '').replace(/\D/g,'');
-    var body = {
-      valor: valorNum,
-      txid: 'INSC' + (protocolo || '').replace(/\D/g,'').slice(0,20).padEnd(6,'0'),
-      info: 'Inscricao ' + (cargoTxt || '').substring(0, 30),
-      cpf: cpfDigitos,
-      cargo_codigo: (cargoTxt.match(/^(\d+)/) || [,''])[1]
-    };
-    // Cache-buster para não pegar resposta antiga
-    var url = API + '/api/pix/generate?_t=' + Date.now();
-    fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-      cache: 'no-store',
-      mode: 'cors'
-    }).then(function(res){
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    })
-    .then(function(data){
-      if(data.detail){
-        // Erro do backend (ex: chave não configurada)
-        mostrarErro(data.detail);
-        return;
-      }
-      if(data.pix_code){
-        pixCode = data.pix_code;
-        document.getElementById('pix-code').textContent = pixCode;
-      }
-      if(data.qr_png_base64){
-        var loader = document.getElementById('qr-loader');
-        if(loader) loader.remove();
-        var img = document.createElement('img');
-        img.src = 'data:image/png;base64,' + data.qr_png_base64;
-        img.alt = 'QR Code PIX';
-        document.getElementById('qr-frame').appendChild(img);
-      }
-      // Registra no admin que PIX foi gerado
-      registrarPixGerado(cpfDigitos, nome, protocolo, valorNum);
-    }).catch(function(err){
-      console.warn('[pix] tentativa', tentativa, err);
-      if(tentativa < 3){
-        // Retry com backoff
-        setTimeout(function(){ gerarPix(tentativa + 1); }, tentativa * 1500);
-      } else {
-        mostrarErro('Não foi possível gerar o QR Code. Verifique sua conexão e tente novamente.');
-      }
-    });
-  }
+    var txid = 'INSC' + (protocolo || '').replace(/\D/g,'').slice(0,20).padEnd(6,'0');
+    var t = Date.now();
 
-  function mostrarErro(msg){
+    // QR CODE: carrega como imagem direta (funciona mesmo se fetch/CORS estiver bloqueado)
+    var qrUrl = API + '/api/pix/qr.png?valor=' + valorNum + '&txid=' + encodeURIComponent(txid) + '&_t=' + t;
     var loader = document.getElementById('qr-loader');
-    if(loader){
-      loader.innerHTML = '<div style="text-align:center;padding:14px"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="color:#dc2626;font-size:12px;margin-bottom:14px;line-height:1.4;font-weight:500">' + msg + '</div><button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:10px 20px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">TENTAR NOVAMENTE</button><div style="margin-top:10px;font-size:10px;color:#999">Ou pressione Ctrl+Shift+R para limpar cache</div></div>';
-    }
-    document.getElementById('pix-code').innerHTML = '<button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:8px 18px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px">🔄 Gerar novamente</button>';
+    if(loader) loader.remove();
+    var img = document.createElement('img');
+    img.src = qrUrl;
+    img.alt = 'QR Code PIX';
+    img.onerror = function(){
+      var frame = document.getElementById('qr-frame');
+      frame.innerHTML = '<div style="width:220px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="color:#dc2626;font-size:12px;margin-bottom:12px;font-weight:500">Erro ao gerar QR Code.<br>Chave PIX não configurada.</div><button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:8px 16px;border-radius:4px;font-weight:700;cursor:pointer;font-size:11px">TENTAR NOVAMENTE</button></div>';
+    };
+    document.getElementById('qr-frame').appendChild(img);
+
+    // CÓDIGO PIX: carrega como texto puro (sem JSON)
+    var codeUrl = API + '/api/pix/code.txt?valor=' + valorNum + '&txid=' + encodeURIComponent(txid) + '&_t=' + t;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', codeUrl, true);
+    xhr.onload = function(){
+      if(xhr.status === 200){
+        pixCode = xhr.responseText.trim();
+        document.getElementById('pix-code').textContent = pixCode;
+        // Registra PIX gerado no admin
+        registrarPixGerado(cpfDigitos, nome, protocolo, valorNum);
+      } else {
+        document.getElementById('pix-code').innerHTML = '<span style="color:#dc2626">Erro ao gerar código PIX. <button onclick="tentarNovamente()" style="background:#16a34a;color:white;border:none;padding:4px 10px;border-radius:4px;font-weight:600;cursor:pointer;font-size:11px;margin-left:8px">TENTAR NOVAMENTE</button></span>';
+      }
+    };
+    xhr.onerror = xhr.onload;
+    xhr.send();
   }
 
   window.tentarNovamente = function(){
-    // Restaura loader e tenta de novo
     var frame = document.getElementById('qr-frame');
     frame.innerHTML = '<div id="qr-loader" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px">Carregando QR…</div>';
     document.getElementById('pix-code').textContent = 'Gerando código PIX…';
-    gerarPix(1);
+    setTimeout(gerarPix, 100);
   };
 
   window.voltar = function(){
