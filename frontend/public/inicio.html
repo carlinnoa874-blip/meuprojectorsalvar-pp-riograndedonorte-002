@@ -183,13 +183,21 @@ html { scroll-behavior: smooth; }
 }
 /* === Compactação HERO específica mobile (Android/iOS) === */
 @media (max-width: 767px){
+  /* Mostra logo Instituto Avalia no topo (que ficava hidden lg:block) */
+  nav .navbar-end.hidden.lg\:block { display: block !important; padding: 8px 12px !important; text-align: center !important; }
+  nav .navbar-end.hidden.lg\:block > a { display: inline-block !important; }
+  nav .navbar-end.hidden.lg\:block img { max-height: 36px !important; width: auto !important; margin: 0 auto !important; }
+  /* Esconde menu horizontal que está dentro do mesmo bloco */
+  nav .navbar-end.hidden.lg\:block .lg\:flex, nav .navbar-end.hidden.lg\:block .hidden.lg\:flex { display: none !important; }
+  /* Nav sticky com altura menor no mobile */
+  nav.sticky.md\:navbar { padding-bottom: 4px !important; background: #fff !important; border-bottom: 1px solid #eee; }
   /* Section hero (bg-gradient-to-b) - reduz drasticamente padding vertical */
   section.bg-gradient-to-b { padding: 0 !important; }
   section.bg-gradient-to-b > .mx-auto { padding: 12px 12px 16px !important; }
   section.bg-gradient-to-b .pt-12 { padding-top: 8px !important; }
   section.bg-gradient-to-b .pt-16, section.bg-gradient-to-b .pt-28 { padding-top: 6px !important; }
   /* Wrapper que empurra do topo (pt-16 md:pt-32) */
-  .pt-16.md\:pt-32 { padding-top: 8px !important; }
+  .pt-16.md\:pt-32 { padding-top: 60px !important; }
   /* LOGO do brasão - reduz para caber em telas pequenas */
   section.bg-gradient-to-b img[alt*="Secretaria"], section.bg-gradient-to-b img.h-20 { max-width: 260px !important; max-height: 60px !important; height: auto !important; width: auto !important; object-fit: contain !important; margin: 0 auto !important; }
   /* Contêiner flex do hero */
