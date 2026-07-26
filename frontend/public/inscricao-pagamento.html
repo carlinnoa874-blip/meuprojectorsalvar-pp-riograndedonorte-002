@@ -235,13 +235,42 @@
   .btn-sair-bottom:hover { background: #d15656; }
 
   @media (max-width: 640px) {
-    .container { padding: 0 16px; margin: 20px auto; }
-    .card, .card-secretaria, .boleto-card { padding: 16px 18px; }
-    .card-secretaria h1 { font-size: 16px; }
-    .info-row { flex-direction: column; gap: 4px; }
-    .info-label { flex: none; }
-    .edital-row img { width: 70px; height: 70px; }
-    .pagamento-title { font-size: 20px; }
+    /* Header compacto */
+    .header { padding: 8px 0 !important; }
+    .header-inner { padding: 0 12px !important; justify-content: center !important; }
+    .logo-mark { width: 32px !important; height: 32px !important; }
+    .logo-text .instituto { font-size: 9px !important; letter-spacing: 1px !important; }
+    .logo-text .avalia { font-size: 18px !important; margin-top: 1px !important; }
+    /* Sair top removido */
+    .btn-sair { display: none !important; }
+    /* Container principal */
+    .container { padding: 0 10px !important; margin: 10px auto !important; }
+    /* Card SECRETARIA compacto */
+    .card-secretaria { padding: 10px 12px !important; margin-bottom: 10px !important; border-radius: 8px !important; }
+    .card-secretaria h1 { font-size: 12px !important; padding-bottom: 8px !important; margin-bottom: 8px !important; line-height: 1.25 !important; text-align: center !important; }
+    /* Edital row: empilha */
+    .edital-row { flex-direction: column !important; gap: 8px !important; align-items: center !important; }
+    .edital-row img, .brasao-rn { max-width: 180px !important; padding: 3px 8px !important; }
+    .brasao-rn svg { width: 34px !important; height: 34px !important; }
+    .brasao-rn .brasao-title { font-size: 10px !important; }
+    .brasao-rn .brasao-sub { font-size: 6px !important; }
+    .edital-row .edital-label { font-size: 12px !important; }
+    /* Section title */
+    .section-title { font-size: 15px !important; margin: 12px 0 6px !important; padding-left: 4px !important; }
+    /* Card INFORMAÇÕES compacto */
+    .card { padding: 10px 12px !important; margin-bottom: 10px !important; border-radius: 8px !important; }
+    .card h2 { font-size: 12px !important; padding-bottom: 6px !important; margin-bottom: 4px !important; letter-spacing: 0.05em !important; }
+    /* Info rows: label empilhada acima do valor, muito compactas */
+    .info-row { flex-direction: column !important; gap: 1px !important; padding: 6px 0 !important; }
+    .info-label { flex: none !important; font-size: 11.5px !important; font-weight: 600 !important; color: #111 !important; }
+    .info-value { font-size: 13px !important; color: #555 !important; }
+    /* Botão pagar */
+    .imprimir-wrap { margin: 16px 0 12px !important; }
+    .btn-pagar { padding: 12px 20px !important; font-size: 13px !important; width: 100% !important; letter-spacing: 0.5px !important; }
+    /* Botão Sair bottom removido também */
+    .sair-wrap, .btn-sair-bottom { display: none !important; }
+    /* Voltar button (se existir) */
+    .btn-voltar, [class*="btn-voltar"] { padding: 8px 14px !important; font-size: 12px !important; }
   }
 
   /* Modal */
