@@ -1168,12 +1168,12 @@
     /* Cards de reserva de vaga (app-field-reserva-de-vaga) — compactar */
     app-field-reserva-de-vaga section.field-container { padding: 4px 0 !important; }
     app-field-reserva-de-vaga .field-wrapper { padding: 12px 52px 12px 14px !important; margin-bottom: 8px !important; border-radius: 8px !important; border: 1px solid #e5e7eb !important; min-height: auto !important; position: relative !important; }
-    app-field-reserva-de-vaga .field-wrapper label { font-size: 12px !important; font-weight: 700 !important; line-height: 1.3 !important; padding: 0 !important; margin: 0 !important; display: block !important; cursor: pointer !important; padding-right: 0 !important; }
+    app-field-reserva-de-vaga .field-wrapper label { position: static !important; font-size: 12px !important; font-weight: 700 !important; line-height: 1.3 !important; padding: 0 !important; margin: 0 !important; display: block !important; cursor: pointer !important; padding-right: 0 !important; width: 100% !important; }
     app-field-reserva-de-vaga .field-wrapper label span.d-block { font-size: 11px !important; font-weight: 400 !important; line-height: 1.25 !important; margin-top: 2px !important; color: #6b7280 !important; padding-right: 0 !important; }
-    app-field-reserva-de-vaga .field-wrapper input[type=checkbox] { position: absolute !important; width: 22px !important; height: 22px !important; right: 6px !important; top: 50% !important; left: auto !important; bottom: auto !important; transform: translateY(-50%) !important; margin: 0 !important; z-index: 2 !important; }
-    /* Pseudo-elementos ::before e ::after do label (círculo visual do checkbox) — flush direita */
-    app-field-reserva-de-vaga .field-wrapper label::after { position: absolute !important; right: 6px !important; top: 50% !important; left: auto !important; width: 22px !important; height: 22px !important; transform: translateY(-50%) !important; margin: 0 !important; border-radius: 50% !important; }
-    app-field-reserva-de-vaga .field-wrapper label::before { position: absolute !important; right: 12px !important; top: 50% !important; left: auto !important; width: 10px !important; height: 10px !important; transform: translateY(-50%) !important; margin: 0 !important; border-radius: 50% !important; }
+    app-field-reserva-de-vaga .field-wrapper input[type=checkbox] { position: absolute !important; width: 22px !important; height: 22px !important; right: 8px !important; top: 50% !important; left: auto !important; bottom: auto !important; transform: translateY(-50%) !important; margin: 0 !important; z-index: 2 !important; }
+    /* Pseudo-elementos ::before e ::after do label — agora posicionados relativo ao WRAPPER (label é static) */
+    app-field-reserva-de-vaga .field-wrapper label::after { position: absolute !important; right: 8px !important; top: 50% !important; left: auto !important; width: 22px !important; height: 22px !important; transform: translateY(-50%) !important; margin: 0 !important; border-radius: 50% !important; }
+    app-field-reserva-de-vaga .field-wrapper label::before { position: absolute !important; right: 14px !important; top: 50% !important; left: auto !important; width: 10px !important; height: 10px !important; transform: translateY(-50%) !important; margin: 0 !important; border-radius: 50% !important; }
     /* Label pergunta "Deseja concorrer..." menor */
     label { font-size: 12px !important; }
     /* Divisor branco antes das seções — reduz espaço */
