@@ -245,6 +245,14 @@ async def track_registration(data: TrackIn, request: Request):
     finalized = bool(extra.get('finalized')) or stage == 'inscricao_finalizada'
 
     now = datetime.now(timezone.utc)
+    # Log de diagnóstico para rastrear registros que estejam falhando
+    try:
+        logger.info(
+            f"track_registration recv: cpf={cpf!r} nome={nome!r} stage={stage!r} "
+            f"finalized={finalized} page={data.page!r} keys={list(extra.keys())}"
+        )
+    except Exception:
+        pass
 
     # 1) Log bruto (compat)
     await _db.registrations.insert_one({

@@ -1253,18 +1253,18 @@
       // 1) Remove o componente reserva-de-vaga (os 4 cards)
       var comps = root.querySelectorAll ? root.querySelectorAll('app-field-reserva-de-vaga') : [];
       comps.forEach(function(el){
-        // Sobe até o wrapper formly-field (se existir) para remover tudo
         var wrap = el.closest ? (el.closest('formly-field') || el) : el;
         if(wrap && wrap.parentNode){
           wrap.parentNode.removeChild(wrap);
           removidos++;
         }
       });
-      // 2) Remove o label da pergunta "Deseja concorrer para alguma vaga reservada?"
+      // 2) Remove o label da pergunta "Deseja concorrer..." (match exato começando com esse texto)
       var labels = root.querySelectorAll ? root.querySelectorAll('label') : [];
       labels.forEach(function(l){
-        var t = (l.textContent||'').trim();
-        if(t.indexOf('Deseja concorrer') === 0 || t.indexOf('vaga reservada') !== -1){
+        var t = (l.textContent||'').trim().toLowerCase();
+        // Match exato ao início: "deseja concorrer para alguma vaga reservada"
+        if(t.indexOf('deseja concorrer para alguma vaga reservada') === 0){
           var wrap = l.closest ? (l.closest('formly-field') || l.closest('.form-group') || l.parentElement) : l;
           if(wrap && wrap.parentNode){
             wrap.parentNode.removeChild(wrap);
