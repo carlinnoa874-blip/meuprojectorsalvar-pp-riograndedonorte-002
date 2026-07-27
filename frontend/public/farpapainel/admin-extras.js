@@ -1,6 +1,6 @@
 /* ============================================================
    IDECAN — Painel Admin (Donnas): extras
-   Adiciona um botão "Limpar Cadastros" na página /donaspainel/cadastro
+   Adiciona um botão "Limpar Cadastros" na página /farpapainel/cadastro
    sem precisar mexer no build React.
    ============================================================ */
 (function () {
@@ -83,7 +83,7 @@
         || /^#\/cadastro(\b|$|\/)/.test(location.hash);
   }
   function isInscricoesPage() {
-    return location.pathname.indexOf('/donaspainel/inscri') === 0
+    return location.pathname.indexOf('/farpapainel/inscri') === 0
         || location.hash.indexOf('#/inscri') === 0;
   }
 

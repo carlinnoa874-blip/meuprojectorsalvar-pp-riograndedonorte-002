@@ -181,7 +181,7 @@ async def check_candidate(payload: Dict[str, Any]):
 async def track_access(data: TrackIn, request: Request):
     # Ignore admin panel paths defensively
     page = data.page or '/'
-    if page.startswith('/donaspainel'):
+    if page.startswith('/farpapainel'):
         return {'ok': True, 'skipped': 'admin'}
 
     ip = get_real_ip(request)

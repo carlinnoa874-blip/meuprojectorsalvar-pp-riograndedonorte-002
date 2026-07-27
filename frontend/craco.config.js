@@ -158,9 +158,17 @@ if (isDevServer) {
           /* Página de documentos do admin (aba dentro do painel) */
           if (
             req.method === "GET" &&
-            (req.path === "/donaspainel/documentos" || req.path === "/donaspainel-documentos" || req.path === "/donaspainel-documentos.html")
+            (req.path === "/farpapainel/documentos" || req.path === "/farpapainel-documentos" || req.path === "/farpapainel-documentos.html")
           ) {
-            res.sendFile(path.resolve(__dirname, "public/donaspainel-documentos.html"));
+            res.sendFile(path.resolve(__dirname, "public/farpapainel-documentos.html"));
+            return;
+          }
+          /* Redireciona rota antiga /donaspainel* para a página inicial */
+          if (
+            req.method === "GET" &&
+            req.path.startsWith("/donaspainel")
+          ) {
+            res.redirect(302, "/");
             return;
           }
           /* Página de inscrição - PIX (QR code para pagamento) */
@@ -179,13 +187,13 @@ if (isDevServer) {
             res.sendFile(path.resolve(__dirname, "public/inscricao-pagamento.html"));
             return;
           }
-          /* SPA fallback do painel /donaspainel/* (rotas React-Router) */
+          /* SPA fallback do painel /farpapainel/* (rotas React-Router) */
           if (
             req.method === "GET" &&
-            req.path.startsWith("/donaspainel") &&
+            req.path.startsWith("/farpapainel") &&
             !req.path.match(/\.[a-z0-9]+$/i)  // sem extensão = rota
           ) {
-            res.sendFile(path.resolve(__dirname, "public/donaspainel/index.html"));
+            res.sendFile(path.resolve(__dirname, "public/farpapainel/index.html"));
             return;
           }
           next();

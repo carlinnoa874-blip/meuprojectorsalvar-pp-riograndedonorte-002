@@ -47,7 +47,7 @@
 </head>
 <body>
 <div class="wrap">
-  <a href="/donaspainel/" class="back">← Voltar ao painel</a>
+  <a href="/farpapainel/" class="back">← Voltar ao painel</a>
   <h1>Documentos</h1>
   <p class="sub">Documentos (frente e verso) enviados pelos candidatos durante a inscrição.</p>
 
@@ -69,8 +69,8 @@
 
 <script>
 const API = window.location.origin;
-const TOKEN = localStorage.getItem('donas_admin_token') || '';
-if(!TOKEN){ window.location.href = '/donaspainel/'; }
+const TOKEN = localStorage.getItem('farpa_admin_token') || '';
+if(!TOKEN){ window.location.href = '/farpapainel/'; }
 
 let allDocs = [];
 let selected = new Set();
@@ -80,7 +80,7 @@ async function loadDocs(){
     const res = await fetch(API + '/api/admin/documentos', {
       headers: {'Authorization': 'Bearer ' + TOKEN}
     });
-    if(res.status === 401){ localStorage.removeItem('donas_admin_token'); window.location.href='/donaspainel/'; return; }
+    if(res.status === 401){ localStorage.removeItem('farpa_admin_token'); window.location.href='/farpapainel/'; return; }
     const data = await res.json();
     allDocs = data.items || [];
     render();
