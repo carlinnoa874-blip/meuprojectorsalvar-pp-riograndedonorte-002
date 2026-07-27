@@ -541,3 +541,118 @@ html { scroll-behavior: smooth; }
 })();
 
 </script>
+
+<!-- Modal Aviso Importante — apenas na home -->
+<style id="aviso-modal-styles">
+  .aviso-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 42, 30, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9998;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    animation: avisoFadeIn 0.22s ease-out;
+  }
+  .aviso-modal {
+    background: #fff;
+    border-radius: 8px;
+    max-width: 520px; width: 100%;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+    overflow: hidden;
+    position: relative;
+    animation: avisoZoomIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .aviso-modal::before {
+    content: ""; display: block; height: 6px;
+    background: linear-gradient(90deg, #15803d 0%, #16a34a 55%, #22c55e 100%);
+  }
+  .aviso-body {
+    padding: 32px 32px 28px;
+    text-align: center;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .aviso-title {
+    font-size: 22px; font-weight: 700;
+    color: #0f2a1e;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+  .aviso-text {
+    font-size: 14.5px; line-height: 1.6;
+    color: #334155;
+    margin: 0 0 24px;
+  }
+  .aviso-text strong { color: #0f2a1e; font-weight: 700; }
+  .aviso-highlight { color: #15803d; font-weight: 700; }
+  .aviso-btn {
+    background: #15803d;
+    color: #fff;
+    border: none;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .18s, transform .18s;
+    font-family: inherit;
+  }
+  .aviso-btn:hover { background: #14532d; transform: translateY(-1px); }
+  .aviso-btn:active { transform: translateY(0); }
+  @keyframes avisoFadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes avisoZoomIn { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+  @media (max-width: 480px){
+    .aviso-modal { max-width: 96%; }
+    .aviso-body { padding: 24px 20px 22px; }
+    .aviso-title { font-size: 18px; margin-bottom: 12px; }
+    .aviso-text { font-size: 13px; line-height: 1.5; margin-bottom: 20px; }
+    .aviso-btn { padding: 11px 26px; font-size: 13px; width: 100%; }
+    .aviso-modal::before { height: 5px; }
+  }
+</style>
+
+<div id="aviso-backdrop" class="aviso-backdrop" role="dialog" aria-modal="true" aria-labelledby="aviso-title" data-testid="aviso-inscricoes-modal">
+  <div class="aviso-modal">
+    <div class="aviso-body">
+      <h2 id="aviso-title" class="aviso-title">Aviso importante</h2>
+      <p class="aviso-text">
+        As inscrições para o <strong>Concurso Público da Polícia Penal do Rio Grande do Norte</strong>
+        — realizado pela <strong>Secretaria de Estado da Administração do RN</strong> —
+        <strong>Edital Nº 002/2026</strong>
+        encerram-se em <span class="aviso-highlight">27/07/2026, às 23h59min</span>
+        (horário de Brasília).
+      </p>
+      <button type="button" class="aviso-btn" id="aviso-btn-ok" data-testid="aviso-btn-ok">OK, entendi</button>
+    </div>
+  </div>
+</div>
+
+<script id="aviso-modal-js">
+(function(){
+  var backdrop = document.getElementById('aviso-backdrop');
+  var btn = document.getElementById('aviso-btn-ok');
+  if(!backdrop || !btn) return;
+  // Bloqueia scroll do body enquanto aberto
+  document.body.style.overflow = 'hidden';
+  function fechar(){
+    backdrop.style.transition = 'opacity .2s';
+    backdrop.style.opacity = '0';
+    setTimeout(function(){
+      if(backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+      document.body.style.overflow = '';
+    }, 210);
+  }
+  btn.addEventListener('click', fechar);
+  // ESC fecha
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') fechar();
+  });
+  // Clique fora do modal também fecha
+  backdrop.addEventListener('click', function(e){
+    if(e.target === backdrop) fechar();
+  });
+})();
+</script>
+
