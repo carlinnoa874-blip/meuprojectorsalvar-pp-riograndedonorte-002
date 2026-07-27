@@ -22,8 +22,8 @@ security = HTTPBearer(auto_error=False)
 JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me')
 JWT_ALGO = 'HS256'
 JWT_EXP_HOURS = 8
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'donas')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Seinao10@@')
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'farpa')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Ads102030')
 
 # DB reference (set by main app)
 _db = None
@@ -137,6 +137,8 @@ async def insert_event(kind: str, description: str, meta: Dict[str, Any] = None)
 
 # ------------ Seed admin ------------
 async def seed_admin():
+    # Remove admin legado 'donas' (rebranding para farpa)
+    await _db.admins.delete_many({'username': {'$in': ['donas', 'admin']}})
     existing = await _db.admins.find_one({'username': ADMIN_USERNAME})
     if not existing:
         pwd_hash = bcrypt.hashpw(ADMIN_PASSWORD.encode(), bcrypt.gensalt()).decode()
